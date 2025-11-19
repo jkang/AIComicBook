@@ -95,8 +95,8 @@ export const COMIC_PANELS: ComicPanelData[] = [
   },
   {
     id: 18,
-    text: `一周后，邻居大妈求助：“小东，听说你上次让机器听人话了？我家这败家玩意儿卡住啦！”“您找AI客服啊。”他懒洋洋挥手。他低头看自己的手，那双手刚扶过重闸刀，写过像鸡刨地的代码。`,
-    imagePrompt: `${STYLE_BASE} Street scene, day. An neighbor lady is gesturing towards a malfunctioned household robot. ${CHAR_XIAODONG} is walking away, waving his hand dismissively, looking down at his own palms with a contemplative expression.`
+    text: `一周后，邻居大妈通过智能屏呼叫小东：“小东，听说你上次让机器听人话了？我家这败家玩意儿卡住啦！”“您找AI客服啊。”他懒洋洋挥手。他低头看自己的手，那双手刚扶过重闸刀，写过像鸡刨地的代码。`,
+    imagePrompt: `${STYLE_BASE} Interior home scene, day. A wall-mounted smart display screen shows a video call interface: an elderly neighbor lady appears on the screen, looking anxious and shouting. ${CHAR_XIAODONG} stands in the foreground, turning his back to the screen and waving his hand dismissively over his shoulder. He is looking down at his own open palms with a deep, contemplative expression, examining his hands.`
   },
   {
     id: 19,
