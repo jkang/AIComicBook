@@ -3,7 +3,13 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export const generateComicPanelImage = async (prompt: string): Promise<string> => {
   try {
-    const ai = new GoogleGenerativeAI({ apiKey: process.env.API_KEY });
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+
+    if (!apiKey) {
+      throw new Error("VITE_GEMINI_API_KEY environment variable is not set");
+    }
+
+    const ai = new GoogleGenerativeAI(apiKey);
 
     // The prompt is now passed directly from the component, which pulls it from constants.ts
     // The constants.ts file already contains the style guide and character descriptions in the prompt.
