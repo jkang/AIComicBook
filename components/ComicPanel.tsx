@@ -19,10 +19,12 @@ const ComicPanel: React.FC<ComicPanelProps> = ({ panel, panelNumber, imageUrl, o
     setIsGenerating(true);
     setError(null);
     try {
-      const base64Image = await generateComicPanelImage(panel.text);
+      // Use the pre-defined, optimized English prompt
+      const base64Image = await generateComicPanelImage(panel.imagePrompt);
       setGeneratedPreview(base64Image);
     } catch (err) {
       setError("Failed to generate image. Please try again.");
+      console.error(err);
     } finally {
       setIsGenerating(false);
     }
@@ -69,7 +71,7 @@ const ComicPanel: React.FC<ComicPanelProps> = ({ panel, panelNumber, imageUrl, o
         {isGenerating && (
           <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mb-2"></div>
-            <span className="text-indigo-400 font-semibold text-sm shadow-black drop-shadow-md">Painting...</span>
+            <span className="text-indigo-400 font-semibold text-sm shadow-black drop-shadow-md">Creating Art...</span>
           </div>
         )}
 
@@ -94,13 +96,13 @@ const ComicPanel: React.FC<ComicPanelProps> = ({ panel, panelNumber, imageUrl, o
               onClick={handleSave}
               className="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-2 px-3 rounded transition-colors"
             >
-              Save & Apply
+              Save & Keep
             </button>
             <button
               onClick={handleCancel}
               className="bg-gray-600 hover:bg-gray-500 text-white text-xs font-bold py-2 px-3 rounded transition-colors"
             >
-              Discard
+              Cancel
             </button>
           </>
         ) : (
@@ -112,7 +114,7 @@ const ComicPanel: React.FC<ComicPanelProps> = ({ panel, panelNumber, imageUrl, o
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
-            {activeImage ? 'Regenerate Image' : 'Generate Image'}
+            {activeImage ? 'Regenerate' : 'Generate Art'}
           </button>
         )}
       </div>
