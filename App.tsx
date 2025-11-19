@@ -1,10 +1,20 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { COMIC_PANELS } from './constants';
-import { panelImages } from './assets/images';
+import { panelImages as initialPanelImages } from './assets/images';
 import ComicPanel from './components/ComicPanel';
 
 const App: React.FC = () => {
+  // State to manage images, initialized with the static assets
+  const [images, setImages] = useState<Record<number, string>>(initialPanelImages);
+
+  const handleSaveImage = (panelId: number, imageUrl: string) => {
+    setImages((prev) => ({
+      ...prev,
+      [panelId]: imageUrl,
+    }));
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 text-gray-200 font-sans">
       <header className="bg-gray-800/80 backdrop-blur-sm sticky top-0 z-20 shadow-lg">
@@ -23,7 +33,8 @@ const App: React.FC = () => {
               key={panel.id}
               panel={panel}
               panelNumber={index + 1}
-              imageUrl={panelImages[panel.id]}
+              imageUrl={images[panel.id]}
+              onSaveImage={handleSaveImage}
             />
           ))}
         </div>
