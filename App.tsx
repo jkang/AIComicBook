@@ -1,14 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { COMIC_PANELS } from './constants';
-import { panelImages as initialPanelImages } from './assets/images';
 import ComicPanel from './components/ComicPanel';
 import { getAllImagesFromDB, saveImageToDB, clearAllImagesFromDB } from './services/storageService';
 
 const App: React.FC = () => {
-  // State to manage images. Initially load static assets to prevent flashing, 
-  // then hydrate with IndexedDB data.
-  const [images, setImages] = useState<Record<number, string>>(initialPanelImages);
+  // State to manage images. 
+  // initialized as empty, will hydrate from IndexedDB
+  const [images, setImages] = useState<Record<number, string>>({});
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Load images from IndexedDB on mount
@@ -16,7 +15,7 @@ const App: React.FC = () => {
     const loadImages = async () => {
       try {
         const storedImages = await getAllImagesFromDB();
-        setImages(prev => ({ ...prev, ...storedImages }));
+        setImages(storedImages);
       } catch (error) {
         console.error("Failed to load images from DB", error);
       } finally {
@@ -43,9 +42,9 @@ const App: React.FC = () => {
   };
 
   const handleClearStorage = async () => {
-      if(window.confirm("Are you sure you want to delete all generated images and revert to defaults?")) {
+      if(window.confirm("Are you sure you want to delete all generated images?")) {
           await clearAllImagesFromDB();
-          setImages(initialPanelImages);
+          setImages({});
       }
   }
 
@@ -87,7 +86,7 @@ const App: React.FC = () => {
       </main>
 
       <footer className="text-center p-8 mt-8 text-gray-500 text-sm border-t border-gray-800">
-        <p>Story based on "72 Hours of AI Downtime". Images generated via Google Imagen 3.</p>
+        <p>Story based on "72 Hours of AI Downtime". Images generated via Google Imagen.</p>
       </footer>
     </div>
   );
