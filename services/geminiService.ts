@@ -1,13 +1,13 @@
 
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export const generateComicPanelImage = async (prompt: string): Promise<string> => {
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    
+    const ai = new GoogleGenerativeAI({ apiKey: process.env.API_KEY });
+
     // The prompt is now passed directly from the component, which pulls it from constants.ts
     // The constants.ts file already contains the style guide and character descriptions in the prompt.
-    
+
     const response = await ai.models.generateImages({
       model: 'imagen-4.0-generate-001',
       prompt: prompt,
@@ -19,7 +19,7 @@ export const generateComicPanelImage = async (prompt: string): Promise<string> =
     });
 
     const base64Image = response.generatedImages?.[0]?.image?.imageBytes;
-    
+
     if (!base64Image) {
       throw new Error("No image data received from API");
     }
