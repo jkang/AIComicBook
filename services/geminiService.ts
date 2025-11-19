@@ -1,12 +1,13 @@
 
 import { GoogleGenAI } from "@google/genai";
 
-export const generateComicPanelImage = async (prompt: string): Promise<string> => {
+export const generateComicPanelImage = async (prompt: string, userApiKey?: string): Promise<string> => {
   try {
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    // Use user-provided API key if available, otherwise fall back to environment variable
+    const apiKey = userApiKey || import.meta.env.VITE_GEMINI_API_KEY;
 
     if (!apiKey) {
-      throw new Error("VITE_GEMINI_API_KEY environment variable is not set");
+      throw new Error("API key is required. Please provide your Gemini API key.");
     }
 
     const ai = new GoogleGenAI({ apiKey });

@@ -10,6 +10,10 @@ const App: React.FC = () => {
   // initialized as empty, will hydrate from IndexedDB
   const [images, setImages] = useState<Record<number, string>>({});
   const [isLoaded, setIsLoaded] = useState(false);
+  const [apiKey, setApiKey] = useState<string>(() => {
+    // Load API key from localStorage on mount
+    return localStorage.getItem('gemini_api_key') || '';
+  });
 
   // Load images from IndexedDB on mount
   useEffect(() => {
@@ -51,7 +55,12 @@ const App: React.FC = () => {
       await clearAllImagesFromDB();
       setImages({});
     }
-  }
+  };
+
+  const handleSaveApiKey = (key: string) => {
+    setApiKey(key);
+    localStorage.setItem('gemini_api_key', key);
+  };
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-200 font-sans">
@@ -84,6 +93,8 @@ const App: React.FC = () => {
                 panelNumber={index + 1}
                 imageUrl={images[panel.id]}
                 onSaveImage={handleSaveImage}
+                apiKey={apiKey}
+                onSaveApiKey={handleSaveApiKey}
               />
             ))}
           </div>

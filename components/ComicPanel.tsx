@@ -8,22 +8,40 @@ interface ComicPanelProps {
   panelNumber: number;
   imageUrl?: string;
   onSaveImage: (id: number, url: string) => void;
+  apiKey: string;
+  onSaveApiKey: (key: string) => void;
 }
 
-const ComicPanel: React.FC<ComicPanelProps> = ({ panel, panelNumber, imageUrl, onSaveImage }) => {
+const ComicPanel: React.FC<ComicPanelProps> = ({ panel, panelNumber, imageUrl, onSaveImage, apiKey, onSaveApiKey }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedPreview, setGeneratedPreview] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleGenerate = async () => {
+    // Check if API key is set
+    if (!apiKey) {
+      const userApiKey = prompt(
+        "请输入你的 AI Studio Gemini API Key:\n\n" +
+        "你可以在这里获取: https://aistudio.google.com/apikey\n\n" +
+        "API Key 将保存在浏览器本地存储中。"
+      );
+
+      if (!userApiKey) {
+        return; // User cancelled
+      }
+
+      onSaveApiKey(userApiKey.trim());
+      // Continue with the newly saved key
+    }
+
     setIsGenerating(true);
     setError(null);
     try {
       // Use the pre-defined, optimized English prompt
-      const base64Image = await generateComicPanelImage(panel.imagePrompt);
+      const base64Image = await generateComicPanelImage(panel.imagePrompt, apiKey);
       setGeneratedPreview(base64Image);
     } catch (err) {
-      setError("Failed to generate image. Please try again.");
+      setError("Failed to generate image. Please check your API key and try again.");
       console.error(err);
     } finally {
       setIsGenerating(false);
@@ -46,7 +64,7 @@ const ComicPanel: React.FC<ComicPanelProps> = ({ panel, panelNumber, imageUrl, o
 
   return (
     <div className="bg-gray-800 border border-gray-700 rounded-lg shadow-lg overflow-hidden flex flex-col h-full transform transition-transform hover:shadow-indigo-500/20 relative group">
-      
+
       {/* Image Area */}
       <div className="relative w-full aspect-[4/3] bg-gray-700 group-hover:bg-gray-600 transition-colors">
         {activeImage ? (
@@ -57,7 +75,7 @@ const ComicPanel: React.FC<ComicPanelProps> = ({ panel, panelNumber, imageUrl, o
             loading="lazy"
           />
         ) : (
-           <div className={`w-full h-full flex flex-col items-center justify-center p-4 text-center bg-gray-700/50 ${isGenerating ? 'opacity-50' : ''}`}>
+          <div className={`w-full h-full flex flex-col items-center justify-center p-4 text-center bg-gray-700/50 ${isGenerating ? 'opacity-50' : ''}`}>
             <svg width="60%" height="60%" viewBox="0 0 100 75" className="text-gray-600">
               <rect x="2" y="2" width="96" height="71" fill="none" stroke="currentColor" strokeWidth="1" rx="2" style={{ vectorEffect: 'non-scaling-stroke' }} />
               <path d="M 20,55 Q 40,35 50,55 T 80,55" stroke="currentColor" strokeWidth="1" fill="none" style={{ vectorEffect: 'non-scaling-stroke' }} />
