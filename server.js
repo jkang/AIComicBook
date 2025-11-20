@@ -133,12 +133,18 @@ USER'S STORY:
 ${storyText}
 ${keywordsText}
 
+IMPORTANT LANGUAGE INSTRUCTION:
+- Detect the language of the user's story text
+- Output visualStyle, characters descriptions, and panel text in THE SAME LANGUAGE as the user's input
+- ONLY the imagePrompt field should be in English (for image generation API)
+- For example: If user writes in Chinese, output visualStyle and characters in Chinese, but imagePrompt in English
+
 YOUR TASK:
-1. **Design Visual Style**: Based on the story's theme, mood, and setting, create a unique visual style description. This should be a concise statement (1-2 sentences) that defines:
-   - Art style (e.g., "watercolor children's book style", "noir comic book art", "anime-inspired manga style", "realistic graphic novel style")
-   - Color palette and mood (e.g., "warm pastel tones", "high contrast shadows", "vibrant saturated colors")
-   - Technical details (e.g., "soft brush strokes", "cel-shaded", "detailed line work")
-   - Any cultural or thematic aesthetics (e.g., "traditional Chinese ink painting influence", "retro-futuristic", "fantasy medieval")
+1. **Design Visual Style**: Based on the story's theme, mood, and setting, create a unique visual style description IN THE USER'S INPUT LANGUAGE. This should be a concise statement (1-2 sentences) that defines:
+   - Art style (e.g., "水彩儿童绘本风格" / "watercolor children's book style")
+   - Color palette and mood (e.g., "温暖柔和色调" / "warm pastel tones")
+   - Technical details (e.g., "柔和笔触" / "soft brush strokes")
+   - Any cultural or thematic aesthetics
 
 2. **Enhance the Story**: Transform this story into a captivating narrative with:
    - Rich sensory details and vivid descriptions
@@ -147,18 +153,18 @@ YOUR TASK:
    - Clear narrative arc with tension and resolution
    - Visual moments that would translate well to comic panels
 
-3. **Extract Key Characters**: Identify 3-5 main characters and provide detailed visual descriptions for each:
+3. **Extract Key Characters**: Identify 3-5 main characters and provide detailed visual descriptions IN THE USER'S INPUT LANGUAGE for each:
    - Physical appearance (age, build, distinctive features)
    - Clothing/costume style
    - Key visual characteristics that make them recognizable
    - Personality traits that affect their visual presentation
 
 4. **Create Comic Panels**: Break the enhanced story into ${targetPanelCount} panels (maximum ${maxPanels}). For each panel:
-   - Write compelling narrative text (2-4 sentences) in the story's original language
-   - Create a detailed image generation prompt in English that includes:
-     * The visual style you designed (reference it consistently)
+   - Write compelling narrative text (2-4 sentences) IN THE USER'S INPUT LANGUAGE
+   - Create a detailed image generation prompt IN ENGLISH that includes:
+     * The visual style you designed (translate to English if needed)
      * Scene description with specific visual elements
-     * Character descriptions (reference the characters you extracted)
+     * Character descriptions (translate to English if needed)
      * Mood and atmosphere
      * Camera angle/composition suggestions
      * Any text/UI elements should be in ENGLISH to avoid garbled characters
@@ -170,23 +176,24 @@ IMPORTANT GUIDELINES:
 - Ensure visual variety across panels (different angles, settings, compositions)
 - Make image prompts specific and detailed for consistent character appearance
 - Keep narrative text concise but impactful
-- ALL image prompts must be in English
+- ALL image prompts (imagePrompt field) must be in English
 - ALL text/UI elements in images must be in English
+- visualStyle, characters, and panel text should be in the SAME LANGUAGE as user's input
 
 OUTPUT FORMAT (JSON):
 {
-  "visualStyle": "Concise visual style description that will be used for all panels in this story",
-  "optimizedStory": "Brief summary of the enhanced story",
+  "visualStyle": "Visual style description in user's input language",
+  "optimizedStory": "Brief summary in user's input language",
   "characters": [
-    "Character 1: [Name] - [Detailed visual description]",
-    "Character 2: [Name] - [Detailed visual description]",
+    "Character 1 description in user's input language",
+    "Character 2 description in user's input language",
     ...
   ],
   "panels": [
     {
       "id": 1,
-      "text": "Panel narrative text in the story's original language",
-      "imagePrompt": "Detailed English prompt starting with the visual style, then scene, characters, and mood"
+      "text": "Panel narrative text in user's input language",
+      "imagePrompt": "Detailed ENGLISH prompt for image generation"
     },
     ...
   ]

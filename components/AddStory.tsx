@@ -73,9 +73,9 @@ const AddStory: React.FC<AddStoryProps> = ({ onSave, onCancel }) => {
         const story: Story = {
             id: `story_${Date.now()}`,
             title: title.trim(),
-            panels: generatedResult.panels,
-            characters: generatedResult.characters,
-            visualStyle: generatedResult.visualStyle,
+            panels: editedPanels || generatedResult.panels,
+            characters: editedCharacters || generatedResult.characters,
+            visualStyle: editedVisualStyle || generatedResult.visualStyle,
             createdAt: Date.now(),
         };
 
@@ -84,7 +84,27 @@ const AddStory: React.FC<AddStoryProps> = ({ onSave, onCancel }) => {
 
     const handleRegenerate = () => {
         setGeneratedResult(null);
+        setEditedVisualStyle(null);
+        setEditedCharacters(null);
+        setEditedPanels(null);
     };
+
+    // Editable state
+    const [editedVisualStyle, setEditedVisualStyle] = useState<string | null>(null);
+    const [editedCharacters, setEditedCharacters] = useState<string[] | null>(null);
+    const [editedPanels, setEditedPanels] = useState<ComicPanelData[] | null>(null);
+    const [editingVisualStyle, setEditingVisualStyle] = useState(false);
+    const [editingCharacters, setEditingCharacters] = useState(false);
+    const [editingPanels, setEditingPanels] = useState(false);
+
+    // Initialize edited state when result changes
+    React.useEffect(() => {
+        if (generatedResult) {
+            setEditedVisualStyle(generatedResult.visualStyle);
+            setEditedCharacters([...generatedResult.characters]);
+            setEditedPanels(generatedResult.panels.map(p => ({ ...p })));
+        }
+    }, [generatedResult]);
 
     return (
         <div className="min-h-screen bg-gray-900 text-gray-200 p-4 md:p-8">
@@ -206,52 +226,161 @@ const AddStory: React.FC<AddStoryProps> = ({ onSave, onCancel }) => {
                 ) : (
                     /* Preview Generated Story */
                     <div className="space-y-6">
-                        {/* Visual Style */}
-                        {generatedResult.visualStyle && (
+                        {/* Visual Style - Editable */}
+                        {(editedVisualStyle || generatedResult.visualStyle) && (
                             <div className="bg-gray-800 border border-indigo-700 rounded-lg p-6">
-                                <h2 className="text-xl font-bold text-indigo-400 mb-3">🎨 视觉风格</h2>
-                                <p className="text-gray-300 text-sm italic leading-relaxed">
-                                    {generatedResult.visualStyle}
-                                </p>
+                                <div className="flex items-center justify-between mb-3">
+                                    <h2 className="text-xl font-bold text-indigo-400">🎨 视觉风格</h2>
+                                    <button
+                                        onClick={() => setEditingVisualStyle(!editingVisualStyle)}
+                                        className="text-sm text-indigo-400 hover:text-indigo-300 transition-colors"
+                                    >
+                                        {editingVisualStyle ? '取消' : '编辑'}
+                                    </button>
+                                </div>
+                                {editingVisualStyle ? (
+                                    <div className="space-y-2">
+                                        <textarea
+                                            value={editedVisualStyle || ''}
+                                            onChange={(e) => setEditedVisualStyle(e.target.value)}
+                                            className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-gray-300 text-sm focus:outline-none focus:border-indigo-500"
+                                            rows={3}
+                                        />
+                                        <button
+                                            onClick={() => setEditingVisualStyle(false)}
+                                            className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm px-4 py-1 rounded transition-colors"
+                                        >
+                                            保存
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <p className="text-gray-300 text-sm italic leading-relaxed">
+                                        {editedVisualStyle}
+                                    </p>
+                                )}
                             </div>
                         )}
 
-                        {/* Characters */}
-                        {generatedResult.characters.length > 0 && (
+                        {/* Characters - Editable */}
+                        {editedCharacters && editedCharacters.length > 0 && (
                             <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-                                <h2 className="text-xl font-bold text-indigo-400 mb-4">主要角色</h2>
-                                <div className="space-y-2">
-                                    {generatedResult.characters.map((char, idx) => (
-                                        <div key={idx} className="text-gray-300 text-sm">
-                                            • {char}
+                                <div className="flex items-center justify-between mb-4">
+                                    <h2 className="text-xl font-bold text-indigo-400">主要角色</h2>
+                                    <button
+                                        onClick={() => setEditingCharacters(!editingCharacters)}
+                                        className="text-sm text-indigo-400 hover:text-indigo-300 transition-colors"
+                                    >
+                                        {editingCharacters ? '取消' : '编辑'}
+                                    </button>
+                                </div>
+                                {editingCharacters ? (
+                                    <div className="space-y-3">
+                                        {editedCharacters.map((char, idx) => (
+                                            <div key={idx} className="space-y-1">
+                                                <label className="text-xs text-gray-500">角色 {idx + 1}</label>
+                                                <textarea
+                                                    value={char}
+                                                    onChange={(e) => {
+                                                        const newChars = [...editedCharacters];
+                                                        newChars[idx] = e.target.value;
+                                                        setEditedCharacters(newChars);
+                                                    }}
+                                                    className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-gray-300 text-sm focus:outline-none focus:border-indigo-500"
+                                                    rows={2}
+                                                />
+                                            </div>
+                                        ))}
+                                        <button
+                                            onClick={() => setEditingCharacters(false)}
+                                            className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm px-4 py-1 rounded transition-colors"
+                                        >
+                                            保存
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {editedCharacters.map((char, idx) => (
+                                            <div key={idx} className="text-gray-300 text-sm">
+                                                • {char}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Panels Preview - Editable */}
+                        {editedPanels && editedPanels.length > 0 && (
+                            <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h2 className="text-xl font-bold text-indigo-400">
+                                        分镜预览 ({editedPanels.length} 个)
+                                    </h2>
+                                    <button
+                                        onClick={() => setEditingPanels(!editingPanels)}
+                                        className="text-sm text-indigo-400 hover:text-indigo-300 transition-colors"
+                                    >
+                                        {editingPanels ? '取消' : '编辑'}
+                                    </button>
+                                </div>
+                                <div className="space-y-4 max-h-96 overflow-y-auto">
+                                    {editedPanels.map((panel, idx) => (
+                                        <div key={panel.id} className="bg-gray-900 border border-gray-700 rounded-lg p-4">
+                                            <div className="flex items-start gap-3">
+                                                <div className="bg-indigo-600 text-white rounded-full h-8 w-8 flex items-center justify-center font-bold text-sm flex-shrink-0">
+                                                    {idx + 1}
+                                                </div>
+                                                {editingPanels ? (
+                                                    <div className="flex-1 space-y-2">
+                                                        <div>
+                                                            <label className="text-xs text-gray-500">分镜文本</label>
+                                                            <textarea
+                                                                value={panel.text}
+                                                                onChange={(e) => {
+                                                                    const newPanels = [...editedPanels];
+                                                                    newPanels[idx].text = e.target.value;
+                                                                    setEditedPanels(newPanels);
+                                                                }}
+                                                                className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-gray-300 text-sm focus:outline-none focus:border-indigo-500 mt-1"
+                                                                rows={3}
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="text-xs text-gray-500">图片提示词 (英文)</label>
+                                                            <textarea
+                                                                value={panel.imagePrompt}
+                                                                onChange={(e) => {
+                                                                    const newPanels = [...editedPanels];
+                                                                    newPanels[idx].imagePrompt = e.target.value;
+                                                                    setEditedPanels(newPanels);
+                                                                }}
+                                                                className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-gray-300 text-sm focus:outline-none focus:border-indigo-500 mt-1"
+                                                                rows={4}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex-1">
+                                                        <p className="text-gray-300 text-sm leading-relaxed mb-2">{panel.text}</p>
+                                                        <p className="text-gray-500 text-xs italic">
+                                                            提示词: {panel.imagePrompt.substring(0, 100)}...
+                                                        </p>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
+                                {editingPanels && (
+                                    <button
+                                        onClick={() => setEditingPanels(false)}
+                                        className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm px-4 py-2 rounded transition-colors mt-4"
+                                    >
+                                        保存所有分镜
+                                    </button>
+                                )}
                             </div>
                         )}
-                        {/* Panels Preview */}
-                        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-                            <h2 className="text-xl font-bold text-indigo-400 mb-4">
-                                分镜预览 ({generatedResult.panels.length} 个)
-                            </h2>
-                            <div className="space-y-4 max-h-96 overflow-y-auto">
-                                {generatedResult.panels.map((panel, idx) => (
-                                    <div key={panel.id} className="bg-gray-900 border border-gray-700 rounded-lg p-4">
-                                        <div className="flex items-start gap-3">
-                                            <div className="bg-indigo-600 text-white rounded-full h-8 w-8 flex items-center justify-center font-bold text-sm flex-shrink-0">
-                                                {idx + 1}
-                                            </div>
-                                            <div className="flex-1">
-                                                <p className="text-gray-300 text-sm leading-relaxed mb-2">{panel.text}</p>
-                                                <p className="text-gray-500 text-xs italic">
-                                                    提示词: {panel.imagePrompt.substring(0, 100)}...
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
 
                         {/* Action Buttons */}
                         <div className="flex gap-4">
