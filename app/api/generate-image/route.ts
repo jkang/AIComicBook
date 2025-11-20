@@ -6,23 +6,21 @@ export async function POST(req: Request) {
     console.log('🚀 [generate-image] API called');
 
     try {
-        const { prompt } = await req.json();
+        const { prompt, apiKey } = await req.json();
         console.log('📝 [generate-image] Prompt length:', prompt?.length);
+        console.log('🔑 [generate-image] API key provided:', !!apiKey);
 
         if (!prompt) {
             console.error('❌ [generate-image] Prompt is missing');
             return NextResponse.json({ error: 'Prompt is required' }, { status: 400 });
         }
 
-        // 优先使用用户提供的 API key，否则使用环境变量
-        const userApiKey = req.headers.get('x-gemini-api-key');
-        const apiKey = userApiKey || process.env.GEMINI_API_KEY;
-
-        console.log('🔑 [generate-image] API key source:', userApiKey ? 'user-provided' : 'environment');
-
+        // 要求用户必须提供 API key
         if (!apiKey) {
-            console.error('❌ [generate-image] No API key available');
-            return NextResponse.json({ error: 'API key not configured' }, { status: 500 });
+            console.error('❌ [generate-image] No API key provided');
+            return NextResponse.json({
+                error: 'API key is required. Please set your Gemini API key in settings.'
+            }, { status: 401 });
         }
 
         // Enhance prompt for consistency using shared helper
