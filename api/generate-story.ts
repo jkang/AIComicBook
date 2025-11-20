@@ -63,11 +63,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         if (!text) {
+            console.error('❌ No text generated in response:', JSON.stringify(response, null, 2));
             throw new Error("No text generated");
         }
 
+        // Clean up text if it contains markdown code blocks
+        const cleanText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+
         // Parse JSON response
-        const storyResult: StoryResult = JSON.parse(text);
+        let storyResult: StoryResult;
+        try {
+            storyResult = JSON.parse(cleanText);
+        } catch (parseError) {
+            console.error('❌ JSON Parse Error:', parseError);
+            console.error('Raw Text:', text);
+            throw new Error("Failed to parse AI response as JSON");
+        }
 
         // Validate and limit panel count
         if (storyResult.panels.length > maxPanels) {
@@ -76,7 +87,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         return res.status(200).json(storyResult);
     } catch (error: any) {
-        console.error('Error generating story:', error);
+        console.error('❌ Error generating story:', error);
         return res.status(500).json({
             error: 'Failed to generate story',
             details: error.message

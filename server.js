@@ -117,6 +117,8 @@ app.post('/api/generate-story', async (req, res) => {
             }
         });
 
+        console.log('Story generation response received');
+
         let text = "";
         if (response.candidates && response.candidates[0] && response.candidates[0].content && response.candidates[0].content.parts) {
             for (const part of response.candidates[0].content.parts) {
@@ -127,21 +129,33 @@ app.post('/api/generate-story', async (req, res) => {
         }
 
         if (!text) {
+            console.error('❌ No text generated in response:', JSON.stringify(response, null, 2));
             throw new Error("No text generated");
         }
 
-        const storyResult = JSON.parse(text);
+        // Clean up text if it contains markdown code blocks (just in case)
+        const cleanText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
 
-        if (storyResult.panels.length > maxPanels) {
-            storyResult.panels = storyResult.panels.slice(0, maxPanels);
+        try {
+            const storyResult = JSON.parse(cleanText);
+
+            if (storyResult.panels.length > maxPanels) {
+                storyResult.panels = storyResult.panels.slice(0, maxPanels);
+            }
+
+            console.log('✅ Story generated successfully');
+            res.json(storyResult);
+        } catch (parseError) {
+            console.error('❌ JSON Parse Error:', parseError);
+            console.error('Raw Text:', text);
+            throw new Error("Failed to parse AI response as JSON");
         }
-
-        res.json(storyResult);
     } catch (error) {
-        console.error('Error generating story:', error);
+        console.error('❌ Error generating story:', error);
         res.status(500).json({
             error: 'Failed to generate story',
-            details: error.message
+            details: error.message,
+            stack: error.stack
         });
     }
 });
