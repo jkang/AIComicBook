@@ -4,6 +4,7 @@ import { Story, ComicPanelData } from '../types';
 import { hasApiKey } from '../services/apiKeyService';
 import ApiKeyModal from './ApiKeyModal';
 import ErrorModal, { ErrorType } from './ErrorModal';
+import { BookOpen, Sparkles, Globe, Tag, X, Loader2, Zap } from 'lucide-react';
 
 interface AddStoryProps {
     onSave: (story: Story) => void;
@@ -154,27 +155,36 @@ const AddStory: React.FC<AddStoryProps> = ({ onSave, onCancel }) => {
                 errorMessage={errorMessage}
             />
 
-            <div className="min-h-screen bg-gray-900 text-gray-200 p-4 md:p-8">
-                <div className="max-w-4xl mx-auto">
+            <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-900 to-indigo-950 text-gray-200 p-4 md:p-8">
+                <div className="max-w-5xl mx-auto">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-8">
-                    <h1 className="text-3xl font-bold text-indigo-400">创建新故事</h1>
+                    <div className="flex items-center gap-3">
+                        <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-3 rounded-xl shadow-lg">
+                            <BookOpen className="w-6 h-6 text-white" />
+                        </div>
+                        <div>
+                            <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
+                                创建新故事
+                            </h1>
+                            <p className="text-sm text-gray-400 mt-1">让 AI 将你的想法变成精彩的漫画故事</p>
+                        </div>
+                    </div>
                     <button
                         onClick={onCancel}
-                        className="text-gray-400 hover:text-white transition-colors"
+                        className="text-gray-400 hover:text-white transition-all hover:rotate-90 duration-300 p-2 hover:bg-gray-800 rounded-lg"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
+                        <X className="w-6 h-6" />
                     </button>
                 </div>
 
                 {!generatedResult ? (
                     /* Input Form */
-                    <div className="space-y-6">
+                    <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl shadow-2xl border border-gray-700/50 p-6 md:p-8 space-y-8">
                         {/* Title Input */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">
+                        <div className="space-y-3">
+                            <label className="flex items-center gap-2 text-sm font-semibold text-gray-200">
+                                <Sparkles className="w-4 h-4 text-indigo-400" />
                                 故事标题 *
                             </label>
                             <input
@@ -182,131 +192,133 @@ const AddStory: React.FC<AddStoryProps> = ({ onSave, onCancel }) => {
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
                                 placeholder="给你的故事起个名字..."
-                                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-gray-200 focus:outline-none focus:border-indigo-500 transition-colors"
+                                className="w-full bg-gray-900/50 border border-gray-600 rounded-xl px-4 py-3.5 text-gray-200 placeholder-gray-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
                                 maxLength={100}
                             />
                         </div>
 
                         {/* Story Text Input */}
-                        <div>
-                            <div className="flex justify-between items-center mb-2">
-                                <label className="block text-sm font-medium text-gray-300">
+                        <div className="space-y-3">
+                            <div className="flex justify-between items-center">
+                                <label className="flex items-center gap-2 text-sm font-semibold text-gray-200">
+                                    <BookOpen className="w-4 h-4 text-indigo-400" />
                                     故事内容 *
                                 </label>
-                                <span className={`text-sm ${charCount > maxChars ? 'text-red-400' : 'text-gray-500'}`}>
+                                <span className={`text-sm font-medium ${charCount > maxChars ? 'text-red-400' : 'text-gray-400'}`}>
                                     {charCount} / {maxChars}
                                 </span>
                             </div>
-                            <textarea
-                                value={storyText}
-                                onChange={(e) => setStoryText(e.target.value)}
-                                placeholder="输入你的故事... 
-                
-提示：
-• 1500字以内：生成8-10个分镜
-• 1500字以上：生成15-20个分镜
-• 最多支持10000字
-• AI会自动优化你的故事，添加细节和视觉描述"
-                                className="w-full h-64 bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-gray-200 focus:outline-none focus:border-indigo-500 transition-colors resize-none"
-                                maxLength={maxChars}
-                            />
+                            <div className="relative">
+                                <textarea
+                                    value={storyText}
+                                    onChange={(e) => setStoryText(e.target.value)}
+                                    placeholder="输入你的故事创意..."
+                                    className="w-full h-64 bg-gray-900/50 border border-gray-600 rounded-xl px-4 py-3.5 text-gray-200 placeholder-gray-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all resize-none"
+                                    maxLength={maxChars}
+                                />
+                            </div>
+                            {/* Tips */}
+                            <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-lg p-4">
+                                <div className="flex items-start gap-3">
+                                    <Zap className="w-5 h-5 text-indigo-400 flex-shrink-0 mt-0.5" />
+                                    <div className="space-y-2 text-sm text-gray-300">
+                                        <p className="font-medium text-indigo-300">💡 创作提示：</p>
+                                        <ul className="space-y-1 text-gray-400">
+                                            <li>• 1500字以内：生成 8-10 个分镜</li>
+                                            <li>• 1500字以上：生成 15-20 个分镜</li>
+                                            <li>• 最多支持 10000 字</li>
+                                            <li>• AI 会自动优化故事，添加视觉细节</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         {/* Keywords Input */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">
-                                关键词 (可选)
+                        <div className="space-y-3">
+                            <label className="flex items-center gap-2 text-sm font-semibold text-gray-200">
+                                <Tag className="w-4 h-4 text-indigo-400" />
+                                关键词 <span className="text-gray-500 font-normal">(可选)</span>
                             </label>
                             <input
                                 type="text"
                                 value={keywords}
                                 onChange={(e) => setKeywords(e.target.value)}
-                                placeholder="用逗号分隔，例如：科幻, 悬疑, 温馨"
-                                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-gray-200 focus:outline-none focus:border-indigo-500 transition-colors"
+                                placeholder="例如：温馨, 童趣, 冒险..."
+                                className="w-full bg-gray-900/50 border border-gray-600 rounded-xl px-4 py-3.5 text-gray-200 placeholder-gray-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
                             />
-                            <p className="text-xs text-gray-500 mt-1">
-                                关键词将帮助AI更好地理解你想要的故事风格
+                            <p className="text-xs text-gray-400 flex items-center gap-1.5">
+                                <span className="w-1 h-1 bg-indigo-400 rounded-full"></span>
+                                用逗号分隔，帮助 AI 更好地理解故事风格
                             </p>
                         </div>
 
                         {/* Language Selector */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">
+                        <div className="space-y-3">
+                            <label className="flex items-center gap-2 text-sm font-semibold text-gray-200">
+                                <Globe className="w-4 h-4 text-indigo-400" />
                                 输出语言
                             </label>
-                            <div className="flex gap-2">
+                            <div className="flex gap-3">
                                 <button
                                     type="button"
                                     onClick={() => setSelectedLanguage('auto')}
-                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${selectedLanguage === 'auto'
-                                            ? 'bg-indigo-600 text-white'
-                                            : 'bg-gray-800 text-gray-400 hover:bg-gray-700 border border-gray-700'
+                                    className={`flex-1 px-4 py-3 rounded-xl text-sm font-medium transition-all ${selectedLanguage === 'auto'
+                                            ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/30'
+                                            : 'bg-gray-900/50 text-gray-400 hover:bg-gray-800 border border-gray-600 hover:border-gray-500'
                                         }`}
                                 >
-                                    自动检测
+                                    🤖 自动检测
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setSelectedLanguage('zh')}
-                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${selectedLanguage === 'zh'
-                                            ? 'bg-indigo-600 text-white'
-                                            : 'bg-gray-800 text-gray-400 hover:bg-gray-700 border border-gray-700'
+                                    className={`flex-1 px-4 py-3 rounded-xl text-sm font-medium transition-all ${selectedLanguage === 'zh'
+                                            ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/30'
+                                            : 'bg-gray-900/50 text-gray-400 hover:bg-gray-800 border border-gray-600 hover:border-gray-500'
                                         }`}
                                 >
-                                    中文
+                                    🇨🇳 中文
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setSelectedLanguage('en')}
-                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${selectedLanguage === 'en'
-                                            ? 'bg-indigo-600 text-white'
-                                            : 'bg-gray-800 text-gray-400 hover:bg-gray-700 border border-gray-700'
+                                    className={`flex-1 px-4 py-3 rounded-xl text-sm font-medium transition-all ${selectedLanguage === 'en'
+                                            ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/30'
+                                            : 'bg-gray-900/50 text-gray-400 hover:bg-gray-800 border border-gray-600 hover:border-gray-500'
                                         }`}
                                 >
-                                    English
+                                    🇺🇸 English
                                 </button>
                             </div>
-                            <p className="text-xs text-gray-500 mt-1">
-                                选择故事内容的输出语言（图片提示词始终为英文）
+                            <p className="text-xs text-gray-400 flex items-center gap-1.5">
+                                <span className="w-1 h-1 bg-indigo-400 rounded-full"></span>
+                                图片提示词始终为英文以获得最佳效果
                             </p>
                         </div>
 
-                        {/* Error Message */}
-                        {error && (
-                            <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 text-red-300">
-                                <div className="flex items-start gap-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    <div className="whitespace-pre-line text-sm">{error}</div>
-                                </div>
-                            </div>
-                        )}
-
                         {/* Generate Button */}
-                        <div className="flex gap-4">
+                        <div className="flex gap-4 pt-4">
                             <button
                                 onClick={handleGenerate}
                                 disabled={isGenerating || !storyText.trim() || !title.trim() || charCount > maxChars}
-                                className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-bold py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2"
+                                className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:from-gray-700 disabled:to-gray-700 disabled:cursor-not-allowed text-white font-bold py-4 px-6 rounded-xl transition-all shadow-lg hover:shadow-indigo-500/50 disabled:shadow-none flex items-center justify-center gap-2.5 group"
                             >
                                 {isGenerating ? (
                                     <>
-                                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                                        <span>AI 正在创作...</span>
+                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                        <span>AI 正在创作中...</span>
                                     </>
                                 ) : (
                                     <>
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                        </svg>
+                                        <Sparkles className="w-5 h-5 group-hover:scale-110 transition-transform" />
                                         <span>生成分镜</span>
                                     </>
                                 )}
                             </button>
                             <button
                                 onClick={onCancel}
-                                className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg transition-colors"
+                                className="bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white font-semibold py-4 px-8 rounded-xl transition-all border border-gray-600 hover:border-gray-500"
                             >
                                 取消
                             </button>
