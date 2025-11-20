@@ -1,8 +1,51 @@
 
 import { ComicPanelData } from '../types';
+import { getApiKey } from './apiKeyService';
+import { GoogleGenAI } from "@google/genai";
+import { enhanceComicPrompt } from '../shared/gemini-helper';
 
 export const generateComicPanelImage = async (prompt: string): Promise<string> => {
   try {
+    const apiKey = getApiKey();
+
+    // 如果用户有自己的 API key，直接在前端调用 Gemini API
+    if (apiKey) {
+      console.log('🔑 Using user API key (client-side)');
+
+      // 增强提示词
+      const enhancedPrompt = enhanceComicPrompt(prompt);
+
+      // 直接调用 Gemini API
+      const ai = new GoogleGenAI({ apiKey });
+
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash-image",
+        contents: enhancedPrompt,
+        config: {
+          responseMimeType: 'application/json'
+        }
+      });
+
+      // 提取图片数据
+      let imageBase64 = null;
+      if (response.candidates && response.candidates[0] && response.candidates[0].content && response.candidates[0].content.parts) {
+        for (const part of response.candidates[0].content.parts) {
+          if (part.inlineData) {
+            imageBase64 = part.inlineData.data;
+            break;
+          }
+        }
+      }
+
+      if (!imageBase64) {
+        throw new Error('No image data received from API');
+      }
+
+      return `data:image/png;base64,${imageBase64}`;
+    }
+
+    // 如果没有用户 API key，使用后端 API（需要服务器配置环境变量）
+    console.log('🌐 Using server API key (server-side)');
     const response = await fetch('/api/generate-image', {
       method: 'POST',
       headers: {
@@ -48,11 +91,19 @@ export const generateStoryPanels = async (
       detectedLanguage = manualLanguage;
     }
 
+    const apiKey = getApiKey();
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+
+    // 如果用户有自己的 API key，添加到请求头
+    if (apiKey) {
+      headers['x-gemini-api-key'] = apiKey;
+    }
+
     const response = await fetch('/api/generate-story', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify({
         storyText,
         keywords,

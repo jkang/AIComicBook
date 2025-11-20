@@ -2,6 +2,8 @@
 import React, { useState } from 'react';
 import { ComicPanelData } from '../types';
 import { generateComicPanelImage } from '../services/geminiService';
+import { hasApiKey } from '../services/apiKeyService';
+import ApiKeyModal from './ApiKeyModal';
 
 interface ComicPanelProps {
   panel: ComicPanelData;
@@ -24,7 +26,16 @@ const ComicPanel: React.FC<ComicPanelProps> = ({ panel, panelNumber, imageUrl, o
   const [showRegenInput, setShowRegenInput] = useState(false);
   const [regenPrompt, setRegenPrompt] = useState('');
 
+  // API Key Modal State
+  const [showApiKeyModal, setShowApiKeyModal] = useState(false);
+
   const handleGenerate = async (customPrompt?: string) => {
+    // 检查是否有 API key
+    if (!hasApiKey()) {
+      setShowApiKeyModal(true);
+      return;
+    }
+
     setIsGenerating(true);
     setError(null);
     setShowRegenInput(false); // Close input if open
@@ -44,6 +55,11 @@ const ComicPanel: React.FC<ComicPanelProps> = ({ panel, panelNumber, imageUrl, o
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const handleApiKeySaved = () => {
+    // API key 保存后，关闭弹框
+    setShowApiKeyModal(false);
   };
 
   const handleSave = () => {
@@ -73,7 +89,15 @@ const ComicPanel: React.FC<ComicPanelProps> = ({ panel, panelNumber, imageUrl, o
   const activeImage = generatedPreview || imageUrl;
 
   return (
-    <div className="bg-gray-800 border border-gray-700 rounded-lg shadow-lg overflow-hidden flex flex-col h-full transform transition-transform hover:shadow-indigo-500/20 relative group">
+    <>
+      {/* API Key Modal */}
+      <ApiKeyModal
+        isOpen={showApiKeyModal}
+        onClose={() => setShowApiKeyModal(false)}
+        onSave={handleApiKeySaved}
+      />
+
+      <div className="bg-gray-800 border border-gray-700 rounded-lg shadow-lg overflow-hidden flex flex-col h-full transform transition-transform hover:shadow-indigo-500/20 relative group">
 
       {/* Image Area */}
       <div className="relative w-full aspect-[4/3] bg-gray-700 group-hover:bg-gray-600 transition-colors">
@@ -223,6 +247,7 @@ const ComicPanel: React.FC<ComicPanelProps> = ({ panel, panelNumber, imageUrl, o
         )}
       </div>
     </div>
+    </>
   );
 };
 

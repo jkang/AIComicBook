@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { generateStoryPanels } from '../services/geminiService';
 import { Story, ComicPanelData } from '../types';
+import { hasApiKey } from '../services/apiKeyService';
+import ApiKeyModal from './ApiKeyModal';
 
 interface AddStoryProps {
     onSave: (story: Story) => void;
@@ -24,6 +26,9 @@ const AddStory: React.FC<AddStoryProps> = ({ onSave, onCancel }) => {
         optimizedStory: string;
     } | null>(null);
 
+    // API Key Modal State
+    const [showApiKeyModal, setShowApiKeyModal] = useState(false);
+
     const charCount = storyText.length;
     const maxChars = 10000;
 
@@ -35,6 +40,12 @@ const AddStory: React.FC<AddStoryProps> = ({ onSave, onCancel }) => {
 
         if (!title.trim()) {
             setError('请输入故事标题');
+            return;
+        }
+
+        // 检查是否有 API key
+        if (!hasApiKey()) {
+            setShowApiKeyModal(true);
             return;
         }
 
@@ -66,6 +77,11 @@ const AddStory: React.FC<AddStoryProps> = ({ onSave, onCancel }) => {
         } finally {
             setIsGenerating(false);
         }
+    };
+
+    const handleApiKeySaved = () => {
+        // API key 保存后，关闭弹框
+        setShowApiKeyModal(false);
     };
 
     const handleSave = () => {
@@ -108,8 +124,16 @@ const AddStory: React.FC<AddStoryProps> = ({ onSave, onCancel }) => {
     }, [generatedResult]);
 
     return (
-        <div className="min-h-screen bg-gray-900 text-gray-200 p-4 md:p-8">
-            <div className="max-w-4xl mx-auto">
+        <>
+            {/* API Key Modal */}
+            <ApiKeyModal
+                isOpen={showApiKeyModal}
+                onClose={() => setShowApiKeyModal(false)}
+                onSave={handleApiKeySaved}
+            />
+
+            <div className="min-h-screen bg-gray-900 text-gray-200 p-4 md:p-8">
+                <div className="max-w-4xl mx-auto">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-8">
                     <h1 className="text-3xl font-bold text-indigo-400">创建新故事</h1>
@@ -447,6 +471,7 @@ const AddStory: React.FC<AddStoryProps> = ({ onSave, onCancel }) => {
                 )}
             </div>
         </div>
+        </>
     );
 };
 
