@@ -33,15 +33,31 @@ export interface StoryGenerationResult {
 
 export const generateStoryPanels = async (
   storyText: string,
-  keywords: string[] = []
+  keywords: string[] = [],
+  manualLanguage: 'auto' | 'zh' | 'en' = 'auto'
 ): Promise<StoryGenerationResult> => {
   try {
+    let detectedLanguage: string;
+
+    if (manualLanguage === 'auto') {
+      // Auto-detect language
+      const { detectUserInputLanguage } = await import('../utils/languageDetection');
+      detectedLanguage = detectUserInputLanguage(storyText);
+    } else {
+      // Use manually selected language
+      detectedLanguage = manualLanguage;
+    }
+
     const response = await fetch('/api/generate-story', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ storyText, keywords }),
+      body: JSON.stringify({
+        storyText,
+        keywords,
+        language: detectedLanguage
+      }),
     });
 
     if (!response.ok) {

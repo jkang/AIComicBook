@@ -14,6 +14,7 @@ const AddStory: React.FC<AddStoryProps> = ({ onSave, onCancel }) => {
 帮我创作一个温馨的好朋友之间冲突再和好的绘本`);
     const [keywords, setKeywords] = useState('温馨, 童趣');
     const [title, setTitle] = useState('给5岁女儿的绘本');
+    const [selectedLanguage, setSelectedLanguage] = useState<'auto' | 'zh' | 'en'>('auto');
     const [isGenerating, setIsGenerating] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [generatedResult, setGeneratedResult] = useState<{
@@ -46,7 +47,7 @@ const AddStory: React.FC<AddStoryProps> = ({ onSave, onCancel }) => {
                 .map(k => k.trim())
                 .filter(k => k.length > 0);
 
-            const result = await generateStoryPanels(storyText, keywordArray);
+            const result = await generateStoryPanels(storyText, keywordArray, selectedLanguage);
             setGeneratedResult(result);
         } catch (err: any) {
             // Improved error handling
@@ -179,6 +180,48 @@ const AddStory: React.FC<AddStoryProps> = ({ onSave, onCancel }) => {
                             />
                             <p className="text-xs text-gray-500 mt-1">
                                 关键词将帮助AI更好地理解你想要的故事风格
+                            </p>
+                        </div>
+
+                        {/* Language Selector */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-300 mb-2">
+                                输出语言
+                            </label>
+                            <div className="flex gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setSelectedLanguage('auto')}
+                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${selectedLanguage === 'auto'
+                                            ? 'bg-indigo-600 text-white'
+                                            : 'bg-gray-800 text-gray-400 hover:bg-gray-700 border border-gray-700'
+                                        }`}
+                                >
+                                    自动检测
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setSelectedLanguage('zh')}
+                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${selectedLanguage === 'zh'
+                                            ? 'bg-indigo-600 text-white'
+                                            : 'bg-gray-800 text-gray-400 hover:bg-gray-700 border border-gray-700'
+                                        }`}
+                                >
+                                    中文
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setSelectedLanguage('en')}
+                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${selectedLanguage === 'en'
+                                            ? 'bg-indigo-600 text-white'
+                                            : 'bg-gray-800 text-gray-400 hover:bg-gray-700 border border-gray-700'
+                                        }`}
+                                >
+                                    English
+                                </button>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1">
+                                选择故事内容的输出语言（图片提示词始终为英文）
                             </p>
                         </div>
 

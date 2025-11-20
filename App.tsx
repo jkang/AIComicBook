@@ -26,8 +26,9 @@ const App: React.FC = () => {
     const loadData = async () => {
       try {
         const storedImages = await getAllImagesFromDB();
-        const mergedImages = { ...panelImages, ...storedImages };
-        setImages(mergedImages);
+        // Only merge with default images for default story view
+        // Custom stories should start with empty images
+        setImages(storedImages);
 
         const storedTexts = await getAllTextsFromDB();
         setPanelTexts(storedTexts);
@@ -36,7 +37,7 @@ const App: React.FC = () => {
         setCustomStories(stories);
       } catch (error) {
         console.error("Failed to load data from DB", error);
-        setImages(panelImages);
+        setImages({});
       } finally {
         setIsLoaded(true);
       }
@@ -123,6 +124,15 @@ const App: React.FC = () => {
     return COMIC_PANELS;
   };
 
+  const getCurrentImage = (panelId: number): string | undefined => {
+    if (viewMode === 'default') {
+      // For default story, use panelImages as fallback
+      return images[panelId] || panelImages[panelId];
+    }
+    // For custom stories, only use stored images (no fallback to default)
+    return images[panelId];
+  };
+
   const getCurrentTitle = () => {
     if (viewMode === 'custom-story' && selectedStoryId) {
       const story = customStories.find(s => s.id === selectedStoryId);
@@ -188,8 +198,8 @@ const App: React.FC = () => {
                   setSelectedStoryId(null);
                 }}
                 className={`px-3 py-1 rounded text-xs whitespace-nowrap transition-colors ${viewMode === 'default'
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                   }`}
               >
                 默认故事
@@ -202,8 +212,8 @@ const App: React.FC = () => {
                     setViewMode('custom-story');
                   }}
                   className={`px-3 py-1 rounded text-xs whitespace-nowrap transition-colors ${selectedStoryId === story.id
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                     }`}
                 >
                   {story.title}
