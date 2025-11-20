@@ -1,30 +1,91 @@
+import { GoogleGenAI } from "@google/genai";
+
 /**
- * Enhance comic prompt for consistency
- * Professional comic designer best practices:
- * 1. Use story-specific visual style
- * 2. Character appearance consistency
- * 3. English text to avoid garbled characters
- * 4. Proper composition and lighting
+ * Generate final image prompt using AI
+ * This function calls Gemini API to create a professional English image prompt
+ * that naturally integrates visual style, characters, and scene description.
  *
- * @param originalPrompt - The scene description from panel.imagePrompt
- * @param storyVisualStyle - The visual style for this story (e.g., "comic book art style, watercolor...")
- * @param characters - Array of character descriptions (e.g., ["Alice (5-year-old girl...)", "Bob (...)"])
+ * @param visualStyle - Visual style description (can be in any language)
+ * @param characters - Array of character descriptions (can be in any language)
+ * @param panelText - The narrative text for this panel (can be in any language)
+ * @param sceneDescription - The scene description from panel.imagePrompt (usually in English)
+ * @param apiKey - Gemini API key
+ * @returns Professional English image generation prompt
  */
-export function enhanceComicPrompt(
-  originalPrompt: string,
-  storyVisualStyle: string | null = null,
-  characters: string[] = []
-): string {
-  // If prompt already looks complete (contains detailed style info), use as-is
-  if (originalPrompt.length > 200 &&
-    (originalPrompt.includes('style') || originalPrompt.includes('aesthetic'))) {
-    return originalPrompt;
+export async function generateFinalImagePrompt(
+  visualStyle: string,
+  characters: string[],
+  panelText: string,
+  sceneDescription: string,
+  apiKey: string
+): Promise<string> {
+  const ai = new GoogleGenAI({ apiKey });
+
+  const charactersText = characters.length > 0
+    ? `\nCHARACTERS:\n${characters.map((char, i) => `${i + 1}. ${char}`).join('\n')}`
+    : '';
+
+  const prompt = `You are a professional image prompt engineer for AI image generation. Your task is to create a high-quality English prompt for generating a comic book panel image.
+
+VISUAL STYLE:
+${visualStyle}
+${charactersText}
+
+PANEL NARRATIVE TEXT:
+${panelText}
+
+SCENE DESCRIPTION:
+${sceneDescription}
+
+YOUR TASK:
+Create a professional English image generation prompt that:
+1. Starts with the visual style (translate to English if needed)
+2. Describes the scene with specific visual details
+3. Naturally integrates character descriptions and actions into the scene (like: "Character Name (description) is doing action")
+4. Includes mood, lighting, and atmosphere
+5. Adds camera angle/composition suggestions
+6. Ensures all text is in English to avoid garbled characters
+
+IMPORTANT FORMAT EXAMPLE:
+"Watercolor children's book style, warm and soft color palette, rounded brush strokes, 4k resolution, aspect ratio 4:3. Bedroom scene, morning light streaming through window. Duoduo (5-year-old Chinese girl with flower hair clip, wearing colorful dress) is jumping excitedly on her bed. Xiao Yi (5-year-old girl with sweet smile, simple dress) is watching from the doorway with a shy smile. Bright, cheerful atmosphere. Medium shot, slightly low angle."
+
+OUTPUT ONLY THE FINAL ENGLISH PROMPT (no explanations, no quotes):`;
+
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents: prompt,
+    config: {
+      temperature: 0.7,
+      topP: 0.9,
+      topK: 40,
+      maxOutputTokens: 500,
+    }
+  });
+
+  let text = "";
+  if (response.candidates && response.candidates[0] && response.candidates[0].content && response.candidates[0].content.parts) {
+    for (const part of response.candidates[0].content.parts) {
+      if (part.text) {
+        text += part.text;
+      }
+    }
   }
 
-  // Use story-specific visual style if provided, otherwise use a neutral base
-  const visualStyle = storyVisualStyle
-    ? `${storyVisualStyle}, 4k resolution, aspect ratio 4:3.`
-    : "4k resolution, aspect ratio 4:3.";
+  // Clean up the response (remove quotes if present)
+  return text.trim().replace(/^["']|["']$/g, '');
+}
+
+/**
+ * Fallback: Simple prompt enhancement without AI
+ * Used when AI call fails or as a backup
+ */
+export function enhanceComicPromptSimple(
+  originalPrompt: string,
+  storyVisualStyle: string,
+  characters: string[] = []
+): string {
+  // Use story-specific visual style
+  const visualStyle = `${storyVisualStyle}, 4k resolution, aspect ratio 4:3.`
 
   // Format characters for prompt (join with commas)
   const charactersStr = characters.length > 0
@@ -40,7 +101,6 @@ export function enhanceComicPrompt(
   ].join(' ');
 
   // Combine: Visual Style + Characters + Scene Description + Guidelines
-  // This matches the pattern in constants.ts: ${STYLE_BASE} ... ${CHAR_XIAODONG} ... ${CHAR_TIEDAN} ...
   return `${visualStyle} ${charactersStr} ${originalPrompt} ${guidelines}`;
 }
 

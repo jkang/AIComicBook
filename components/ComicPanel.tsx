@@ -56,8 +56,13 @@ const ComicPanel: React.FC<ComicPanelProps> = ({ panel, panelNumber, imageUrl, v
         finalPrompt += ` Modification request: ${customPrompt}`;
       }
 
-      // Pass visualStyle and characters to maintain consistency across panels
-      const base64Image = await generateComicPanelImage(finalPrompt, visualStyle, characters);
+      // Pass visualStyle, characters, and panelText to generate professional prompt
+      const base64Image = await generateComicPanelImage(
+        finalPrompt,
+        visualStyle,
+        characters,
+        panel.text // Pass the narrative text for better context
+      );
       setGeneratedPreview(base64Image);
     } catch (err: any) {
       console.error('Error generating image:', err);

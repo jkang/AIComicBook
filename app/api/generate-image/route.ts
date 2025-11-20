@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenAI } from "@google/genai";
-import { enhanceComicPrompt } from '../../../shared/gemini-helper';
+import { generateFinalImagePrompt, enhanceComicPromptSimple } from '../../../shared/gemini-helper';
 
 export async function POST(req: Request) {
     try {
-        const { prompt, apiKey, visualStyle, characters } = await req.json();
+        const { prompt, apiKey, visualStyle, characters, panelText } = await req.json();
 
         if (!prompt) {
             return NextResponse.json({ error: 'Prompt is required' }, { status: 400 });
@@ -17,10 +17,24 @@ export async function POST(req: Request) {
             }, { status: 401 });
         }
 
-        // Enhance prompt for consistency using shared helper
-        // Pass visualStyle and characters to maintain consistency across panels
-        const enhancedPrompt = enhanceComicPrompt(prompt, visualStyle || null, characters || []);
-        console.log('📋 [generate-image] Enhanced prompt:', enhancedPrompt);
+        // Generate final image prompt using AI
+        // This will translate and naturally integrate visualStyle, characters, and scene description
+        let enhancedPrompt: string;
+        try {
+            enhancedPrompt = await generateFinalImagePrompt(
+                visualStyle || '',
+                characters || [],
+                panelText || '',
+                prompt,
+                apiKey
+            );
+            console.log('✨ [generate-image] AI-generated prompt:', enhancedPrompt);
+        } catch (aiError) {
+            // Fallback to simple enhancement if AI call fails
+            console.warn('⚠️ [generate-image] AI prompt generation failed, using fallback:', aiError);
+            enhancedPrompt = enhanceComicPromptSimple(prompt, visualStyle || '', characters || []);
+            console.log('📋 [generate-image] Fallback prompt:', enhancedPrompt);
+        }
 
         // Use the new SDK for Gemini 2.5 Flash Image
         const ai = new GoogleGenAI({ apiKey: apiKey });
