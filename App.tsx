@@ -196,13 +196,13 @@ const App: React.FC = () => {
                 <>
                   <button
                     onClick={handleExportStory}
-                    className="text-xs text-green-400 hover:text-green-300 border border-green-900 hover:bg-green-900/30 px-3 py-1 rounded transition-colors"
+                    className="text-xs text-indigo-400 hover:text-green-400 border border-indigo-900 hover:border-green-900 hover:bg-green-900/30 px-3 py-1 rounded transition-colors"
                   >
                     导出 HTML
                   </button>
                   <button
                     onClick={() => selectedStoryId && handleDeleteStory(selectedStoryId)}
-                    className="text-xs text-red-400 hover:text-red-300 border border-red-900 hover:bg-red-900/30 px-3 py-1 rounded transition-colors"
+                    className="text-xs text-indigo-400 hover:text-red-400 border border-indigo-900 hover:border-red-900 hover:bg-red-900/30 px-3 py-1 rounded transition-colors"
                   >
                     删除故事
                   </button>
