@@ -14,8 +14,7 @@ export function enhanceComicPrompt(originalPrompt: string, storyVisualStyle: str
   }
 
   // Use story-specific visual style if provided, otherwise use a neutral base
-  const visualStyle = storyVisualStyle ||
-    "comic book art style, cel-shaded, intricate details, atmospheric lighting, 4k resolution";
+  const visualStyle = storyVisualStyle + ", 4k resolution, aspect ratio 4:3.";
 
   // Additional professional guidelines
   const guidelines = [
