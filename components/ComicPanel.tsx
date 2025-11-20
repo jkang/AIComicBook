@@ -153,12 +153,12 @@ const ComicPanel: React.FC<ComicPanelProps> = ({ panel, panelNumber, imageUrl, o
       <div className="bg-gray-800 border border-gray-700 rounded-lg shadow-lg overflow-hidden flex flex-col h-full transform transition-transform hover:shadow-indigo-500/20 relative group">
 
       {/* Image Area */}
-      <div className="relative w-full aspect-[4/3] bg-gray-700 group-hover:bg-gray-600 transition-colors">
+      <div className="relative w-full aspect-[4/3] bg-gray-700 group-hover:bg-gray-600 transition-colors overflow-hidden">
         {activeImage ? (
           <img
             src={activeImage}
             alt={`Comic panel ${panelNumber}`}
-            className={`w-full h-full object-cover ${isGenerating ? 'opacity-50 blur-sm' : ''}`}
+            className={`w-full h-full object-contain ${isGenerating ? 'opacity-50 blur-sm' : ''}`}
             loading="lazy"
           />
         ) : (

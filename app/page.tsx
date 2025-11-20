@@ -102,6 +102,30 @@ export default function Home() {
             setCustomStories((prev) => [story, ...prev]);
             setSelectedStoryId(story.id);
             setViewMode('custom-story');
+
+            // 为新故事的第一帧添加示例图片
+            try {
+                const response = await fetch('/image-1.png');
+                const blob = await response.blob();
+                const reader = new FileReader();
+                reader.onloadend = async () => {
+                    const base64Image = reader.result as string;
+                    const key = `${story.id}_1`;
+
+                    // 保存到状态
+                    setImages((prev) => ({
+                        ...prev,
+                        [key]: base64Image,
+                    }));
+
+                    // 保存到 IndexedDB
+                    await saveImageToDB(story.id, 1, base64Image);
+                };
+                reader.readAsDataURL(blob);
+            } catch (error) {
+                console.error("Failed to load example image", error);
+                // 不影响故事保存，只是没有示例图片
+            }
         } catch (error) {
             console.error("Failed to save story", error);
             alert("保存故事失败");
