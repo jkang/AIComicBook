@@ -1,28 +1,37 @@
 
 import { get, set, del, keys } from 'idb-keyval';
 
-const PREFIX = 'comic_panel_img_';
+// New prefix format: img_{storyId}_{panelId}
+// Old prefix format: comic_panel_img_{panelId} (treated as storyId='default')
+const IMG_PREFIX = 'img_';
+const OLD_IMG_PREFIX = 'comic_panel_img_';
 
-export const saveImageToDB = async (panelId: number, base64Image: string): Promise<void> => {
-  await set(`${PREFIX}${panelId}`, base64Image);
+export const saveImageToDB = async (storyId: string, panelId: number, base64Image: string): Promise<void> => {
+  await set(`${IMG_PREFIX}${storyId}_${panelId}`, base64Image);
 };
 
-export const getImageFromDB = async (panelId: number): Promise<string | undefined> => {
-  return await get<string>(`${PREFIX}${panelId}`);
+export const getImageFromDB = async (storyId: string, panelId: number): Promise<string | undefined> => {
+  return await get<string>(`${IMG_PREFIX}${storyId}_${panelId}`);
 };
 
-export const getAllImagesFromDB = async (): Promise<Record<number, string>> => {
+export const getAllImagesFromDB = async (): Promise<Record<string, string>> => {
   const allKeys = await keys();
-  const imageKeys = allKeys.filter(k => typeof k === 'string' && k.startsWith(PREFIX));
+  const images: Record<string, string> = {};
 
-  const images: Record<number, string> = {};
+  for (const key of allKeys) {
+    if (typeof key !== 'string') continue;
 
-  for (const key of imageKeys) {
-    const id = parseInt((key as string).replace(PREFIX, ''), 10);
-    if (!isNaN(id)) {
+    if (key.startsWith(IMG_PREFIX)) {
+      // New format: img_{storyId}_{panelId} -> key in state: {storyId}_{panelId}
+      const cleanKey = key.replace(IMG_PREFIX, '');
       const val = await get<string>(key);
-      if (val) {
-        images[id] = val;
+      if (val) images[cleanKey] = val;
+    } else if (key.startsWith(OLD_IMG_PREFIX)) {
+      // Old format: comic_panel_img_{panelId} -> key in state: default_{panelId}
+      const id = parseInt(key.replace(OLD_IMG_PREFIX, ''), 10);
+      if (!isNaN(id)) {
+        const val = await get<string>(key);
+        if (val) images[`default_${id}`] = val;
       }
     }
   }
@@ -32,30 +41,37 @@ export const getAllImagesFromDB = async (): Promise<Record<number, string>> => {
 
 export const clearAllImagesFromDB = async (): Promise<void> => {
   const allKeys = await keys();
-  const imageKeys = allKeys.filter(k => typeof k === 'string' && k.startsWith(PREFIX));
-  for (const key of imageKeys) {
-    await del(key);
+  for (const key of allKeys) {
+    if (typeof key === 'string' && (key.startsWith(IMG_PREFIX) || key.startsWith(OLD_IMG_PREFIX))) {
+      await del(key);
+    }
   }
 };
 
-const TEXT_PREFIX = 'comic_panel_text_';
+// Text storage
+const TEXT_PREFIX = 'text_';
+const OLD_TEXT_PREFIX = 'comic_panel_text_';
 
-export const saveTextToDB = async (panelId: number, text: string): Promise<void> => {
-  await set(`${TEXT_PREFIX}${panelId}`, text);
+export const saveTextToDB = async (storyId: string, panelId: number, text: string): Promise<void> => {
+  await set(`${TEXT_PREFIX}${storyId}_${panelId}`, text);
 };
 
-export const getAllTextsFromDB = async (): Promise<Record<number, string>> => {
+export const getAllTextsFromDB = async (): Promise<Record<string, string>> => {
   const allKeys = await keys();
-  const textKeys = allKeys.filter(k => typeof k === 'string' && k.startsWith(TEXT_PREFIX));
+  const texts: Record<string, string> = {};
 
-  const texts: Record<number, string> = {};
+  for (const key of allKeys) {
+    if (typeof key !== 'string') continue;
 
-  for (const key of textKeys) {
-    const id = parseInt((key as string).replace(TEXT_PREFIX, ''), 10);
-    if (!isNaN(id)) {
+    if (key.startsWith(TEXT_PREFIX)) {
+      const cleanKey = key.replace(TEXT_PREFIX, '');
       const val = await get<string>(key);
-      if (val) {
-        texts[id] = val;
+      if (val) texts[cleanKey] = val;
+    } else if (key.startsWith(OLD_TEXT_PREFIX)) {
+      const id = parseInt(key.replace(OLD_TEXT_PREFIX, ''), 10);
+      if (!isNaN(id)) {
+        const val = await get<string>(key);
+        if (val) texts[`default_${id}`] = val;
       }
     }
   }
@@ -65,9 +81,10 @@ export const getAllTextsFromDB = async (): Promise<Record<number, string>> => {
 
 export const clearAllTextsFromDB = async (): Promise<void> => {
   const allKeys = await keys();
-  const textKeys = allKeys.filter(k => typeof k === 'string' && k.startsWith(TEXT_PREFIX));
-  for (const key of textKeys) {
-    await del(key);
+  for (const key of allKeys) {
+    if (typeof key === 'string' && (key.startsWith(TEXT_PREFIX) || key.startsWith(OLD_TEXT_PREFIX))) {
+      await del(key);
+    }
   }
 };
 

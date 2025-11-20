@@ -10,10 +10,13 @@ import { exportStoryAsHTML } from './services/exportService';
 
 type ViewMode = 'default' | 'add-story' | 'custom-story';
 
+const DEFAULT_STORY_ID = 'default';
+
 const App: React.FC = () => {
   // State to manage images and texts
-  const [images, setImages] = useState<Record<number, string>>({});
-  const [panelTexts, setPanelTexts] = useState<Record<number, string>>({});
+  // Key format: {storyId}_{panelId}
+  const [images, setImages] = useState<Record<string, string>>({});
+  const [panelTexts, setPanelTexts] = useState<Record<string, string>>({});
   const [isLoaded, setIsLoaded] = useState(false);
 
   // View and story management
@@ -46,13 +49,16 @@ const App: React.FC = () => {
   }, []);
 
   const handleSaveImage = async (panelId: number, imageUrl: string) => {
+    const currentStoryId = selectedStoryId || DEFAULT_STORY_ID;
+    const key = `${currentStoryId}_${panelId}`;
+
     setImages((prev) => ({
       ...prev,
-      [panelId]: imageUrl,
+      [key]: imageUrl,
     }));
 
     try {
-      await saveImageToDB(panelId, imageUrl);
+      await saveImageToDB(currentStoryId, panelId, imageUrl);
     } catch (error) {
       console.error("Failed to save image to DB", error);
       alert("Failed to save image locally. It will be lost on refresh.");
@@ -60,13 +66,16 @@ const App: React.FC = () => {
   };
 
   const handleSaveText = async (panelId: number, newText: string) => {
+    const currentStoryId = selectedStoryId || DEFAULT_STORY_ID;
+    const key = `${currentStoryId}_${panelId}`;
+
     setPanelTexts((prev) => ({
       ...prev,
-      [panelId]: newText,
+      [key]: newText,
     }));
 
     try {
-      await saveTextToDB(panelId, newText);
+      await saveTextToDB(currentStoryId, panelId, newText);
     } catch (error) {
       console.error("Failed to save text to DB", error);
     }
@@ -110,8 +119,18 @@ const App: React.FC = () => {
 
   const handleExportStory = () => {
     const story = customStories.find(s => s.id === selectedStoryId);
-    if (story) {
-      exportStoryAsHTML(story, images);
+    if (story && selectedStoryId) {
+      // Filter images for this story and convert keys back to numbers
+      const storyImages: Record<number, string> = {};
+      Object.entries(images).forEach(([key, url]) => {
+        if (key.startsWith(`${selectedStoryId}_`)) {
+          const panelId = parseInt(key.split('_')[1], 10);
+          if (!isNaN(panelId)) {
+            storyImages[panelId] = url;
+          }
+        }
+      });
+      exportStoryAsHTML(story, storyImages);
     }
   };
 
@@ -125,12 +144,21 @@ const App: React.FC = () => {
   };
 
   const getCurrentImage = (panelId: number): string | undefined => {
+    const currentStoryId = selectedStoryId || DEFAULT_STORY_ID;
+    const key = `${currentStoryId}_${panelId}`;
+
     if (viewMode === 'default') {
       // For default story, use panelImages as fallback
-      return images[panelId] || panelImages[panelId];
+      return images[key] || panelImages[panelId];
     }
     // For custom stories, only use stored images (no fallback to default)
-    return images[panelId];
+    return images[key];
+  };
+
+  const getCurrentText = (panelId: number, defaultText: string): string => {
+    const currentStoryId = selectedStoryId || DEFAULT_STORY_ID;
+    const key = `${currentStoryId}_${panelId}`;
+    return panelTexts[key] || defaultText;
   };
 
   const getCurrentTitle = () => {
@@ -234,10 +262,10 @@ const App: React.FC = () => {
                 key={panel.id}
                 panel={{
                   ...panel,
-                  text: panelTexts[panel.id] || panel.text
+                  text: getCurrentText(panel.id, panel.text)
                 }}
                 panelNumber={index + 1}
-                imageUrl={images[panel.id]}
+                imageUrl={getCurrentImage(panel.id)}
                 onSaveImage={handleSaveImage}
                 onSaveText={handleSaveText}
               />
