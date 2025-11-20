@@ -1,5 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from "@google/genai";
+// @ts-ignore - shared helper is JS
+import { enhanceComicPrompt } from '../shared/gemini-helper.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method !== 'POST') {
@@ -18,42 +20,41 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return res.status(500).json({ error: 'API key not configured' });
         }
 
-        // Enhance prompt for consistency
+        // Enhance prompt for consistency using shared helper
         const enhancedPrompt = enhanceComicPrompt(prompt);
 
-        // Use Google AI Studio API (not Vertex AI)
-        const genAI = new GoogleGenerativeAI(apiKey);
+        // Use the new SDK for Gemini 2.5 Flash Image
+        const ai = new GoogleGenAI({ apiKey: apiKey });
 
-        // Use Gemini 1.5 Flash - supports image generation via text prompts
-        // Note: Imagen models are not available in AI Studio API
-        // gemini-2.5-flash-image has quota limits on free tier
-        const model = genAI.getGenerativeModel({
-            model: 'gemini-2.5-flash-image'
-        });
-
-        const result = await model.generateContent({
-            contents: [{
-                role: 'user',
-                parts: [{
-                    text: enhancedPrompt
-                }]
-            }],
-            generationConfig: {
-                temperature: 0.4,
-                candidateCount: 1,
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash-image",
+            contents: enhancedPrompt,
+            config: {
+                responseMimeType: 'application/json'
             }
         });
 
-        // Extract image from response
-        const response = result.response;
-        const imageData = response.candidates?.[0]?.content?.parts?.[0]?.inlineData;
+        // Handle the response to find image data
+        let imageBase64 = null;
 
-        if (!imageData || !imageData.data) {
+        // The response structure in the new SDK might be slightly different
+        // We need to check where the inlineData is located
+        if (response.candidates && response.candidates[0] && response.candidates[0].content && response.candidates[0].content.parts) {
+            for (const part of response.candidates[0].content.parts) {
+                if (part.inlineData) {
+                    imageBase64 = part.inlineData.data;
+                    break;
+                }
+            }
+        }
+
+        if (!imageBase64) {
+            console.error('No image data in response', JSON.stringify(response, null, 2));
             return res.status(500).json({ error: 'No image data received from API' });
         }
 
         return res.status(200).json({
-            image: `data:${imageData.mimeType};base64,${imageData.data}`
+            image: `data:image/png;base64,${imageBase64}`
         });
     } catch (error: any) {
         console.error('Error generating image:', error);
@@ -62,25 +63,4 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             details: error.message
         });
     }
-}
-
-/**
- * Enhance comic prompt for consistency
- */
-function enhanceComicPrompt(originalPrompt: string): string {
-    const STYLE_BASE = "comic book art style, retro-futuristic 2050 China aesthetics, cel-shaded, intricate details, atmospheric lighting, 4k resolution.";
-
-    if (originalPrompt.includes('comic book art style') ||
-        originalPrompt.includes(STYLE_BASE)) {
-        return originalPrompt;
-    }
-
-    const guidelines = [
-        "Use English for any text or UI elements in the image to avoid garbled characters.",
-        "Maintain consistent character appearances if characters are mentioned.",
-        "Apply cinematic composition with clear focal points.",
-        "Ensure proper depth and atmospheric perspective."
-    ].join(' ');
-
-    return `${STYLE_BASE} ${originalPrompt} ${guidelines}`;
 }
