@@ -8,9 +8,12 @@ interface AddStoryProps {
 }
 
 const AddStory: React.FC<AddStoryProps> = ({ onSave, onCancel }) => {
-    const [storyText, setStoryText] = useState('');
-    const [keywords, setKeywords] = useState('');
-    const [title, setTitle] = useState('');
+    const [storyText, setStoryText] = useState(`宝宝名字叫朵朵
+是一个爱美的小姑娘
+有的时候和幼儿园的小朋友会发生小冲突
+帮我创作一个温馨的好朋友之间冲突再和好的绘本`);
+    const [keywords, setKeywords] = useState('温馨, 童趣');
+    const [title, setTitle] = useState('给5岁女儿的绘本');
     const [isGenerating, setIsGenerating] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [generatedResult, setGeneratedResult] = useState<{
@@ -20,7 +23,7 @@ const AddStory: React.FC<AddStoryProps> = ({ onSave, onCancel }) => {
     } | null>(null);
 
     const charCount = storyText.length;
-    const maxChars = 3000;
+    const maxChars = 10000;
 
     const handleGenerate = async () => {
         if (!storyText.trim()) {
@@ -45,7 +48,18 @@ const AddStory: React.FC<AddStoryProps> = ({ onSave, onCancel }) => {
             const result = await generateStoryPanels(storyText, keywordArray);
             setGeneratedResult(result);
         } catch (err: any) {
-            setError(err.message || '生成失败，请稍后重试');
+            // Improved error handling
+            let errorMessage = '生成失败，请稍后重试';
+
+            if (err.message?.includes('fetch') || err.message?.includes('Failed to fetch')) {
+                errorMessage = '无法连接到服务器。请确保：\n1. 已启动本地服务器（使用 vercel dev）\n2. 或已部署到 Vercel 并设置了 GEMINI_API_KEY 环境变量';
+            } else if (err.message?.includes('API key')) {
+                errorMessage = 'API Key 未配置或无效。请在环境变量中设置 GEMINI_API_KEY';
+            } else if (err.message) {
+                errorMessage = err.message;
+            }
+
+            setError(errorMessage);
             console.error(err);
         } finally {
             setIsGenerating(false);
@@ -122,6 +136,7 @@ const AddStory: React.FC<AddStoryProps> = ({ onSave, onCancel }) => {
 提示：
 • 1500字以内：生成8-10个分镜
 • 1500字以上：生成15-20个分镜
+• 最多支持10000字
 • AI会自动优化你的故事，添加细节和视觉描述"
                                 className="w-full h-64 bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-gray-200 focus:outline-none focus:border-indigo-500 transition-colors resize-none"
                                 maxLength={maxChars}
@@ -148,7 +163,12 @@ const AddStory: React.FC<AddStoryProps> = ({ onSave, onCancel }) => {
                         {/* Error Message */}
                         {error && (
                             <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 text-red-300">
-                                {error}
+                                <div className="flex items-start gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <div className="whitespace-pre-line text-sm">{error}</div>
+                                </div>
                             </div>
                         )}
 
