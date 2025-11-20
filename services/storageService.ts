@@ -14,9 +14,9 @@ export const getImageFromDB = async (panelId: number): Promise<string | undefine
 export const getAllImagesFromDB = async (): Promise<Record<number, string>> => {
   const allKeys = await keys();
   const imageKeys = allKeys.filter(k => typeof k === 'string' && k.startsWith(PREFIX));
-  
+
   const images: Record<number, string> = {};
-  
+
   for (const key of imageKeys) {
     const id = parseInt((key as string).replace(PREFIX, ''), 10);
     if (!isNaN(id)) {
@@ -26,14 +26,47 @@ export const getAllImagesFromDB = async (): Promise<Record<number, string>> => {
       }
     }
   }
-  
+
   return images;
 };
 
 export const clearAllImagesFromDB = async (): Promise<void> => {
-    const allKeys = await keys();
-    const imageKeys = allKeys.filter(k => typeof k === 'string' && k.startsWith(PREFIX));
-    for (const key of imageKeys) {
-        await del(key);
+  const allKeys = await keys();
+  const imageKeys = allKeys.filter(k => typeof k === 'string' && k.startsWith(PREFIX));
+  for (const key of imageKeys) {
+    await del(key);
+  }
+};
+
+const TEXT_PREFIX = 'comic_panel_text_';
+
+export const saveTextToDB = async (panelId: number, text: string): Promise<void> => {
+  await set(`${TEXT_PREFIX}${panelId}`, text);
+};
+
+export const getAllTextsFromDB = async (): Promise<Record<number, string>> => {
+  const allKeys = await keys();
+  const textKeys = allKeys.filter(k => typeof k === 'string' && k.startsWith(TEXT_PREFIX));
+
+  const texts: Record<number, string> = {};
+
+  for (const key of textKeys) {
+    const id = parseInt((key as string).replace(TEXT_PREFIX, ''), 10);
+    if (!isNaN(id)) {
+      const val = await get<string>(key);
+      if (val) {
+        texts[id] = val;
+      }
     }
+  }
+
+  return texts;
+};
+
+export const clearAllTextsFromDB = async (): Promise<void> => {
+  const allKeys = await keys();
+  const textKeys = allKeys.filter(k => typeof k === 'string' && k.startsWith(TEXT_PREFIX));
+  for (const key of textKeys) {
+    await del(key);
+  }
 };

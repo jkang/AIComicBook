@@ -2,13 +2,14 @@
 import React, { useState, useEffect } from 'react';
 import { COMIC_PANELS } from './constants';
 import ComicPanel from './components/ComicPanel';
-import { getAllImagesFromDB, saveImageToDB, clearAllImagesFromDB } from './services/storageService';
+import { getAllImagesFromDB, saveImageToDB, clearAllImagesFromDB, getAllTextsFromDB, saveTextToDB, clearAllTextsFromDB } from './services/storageService';
 import { panelImages } from './assets/images';
 
 const App: React.FC = () => {
   // State to manage images. 
   // initialized as empty, will hydrate from IndexedDB
   const [images, setImages] = useState<Record<number, string>>({});
+  const [panelTexts, setPanelTexts] = useState<Record<number, string>>({});
   const [isLoaded, setIsLoaded] = useState(false);
   const [apiKey, setApiKey] = useState<string>(() => {
     // Load API key from localStorage on mount
@@ -23,8 +24,11 @@ const App: React.FC = () => {
         // Merge default images with stored images, stored images take priority
         const mergedImages = { ...panelImages, ...storedImages };
         setImages(mergedImages);
+
+        const storedTexts = await getAllTextsFromDB();
+        setPanelTexts(storedTexts);
       } catch (error) {
-        console.error("Failed to load images from DB", error);
+        console.error("Failed to load data from DB", error);
         // If DB fails, at least use default images
         setImages(panelImages);
       } finally {
@@ -50,10 +54,25 @@ const App: React.FC = () => {
     }
   };
 
+  const handleSaveText = async (panelId: number, newText: string) => {
+    setPanelTexts((prev) => ({
+      ...prev,
+      [panelId]: newText,
+    }));
+
+    try {
+      await saveTextToDB(panelId, newText);
+    } catch (error) {
+      console.error("Failed to save text to DB", error);
+    }
+  };
+
   const handleClearStorage = async () => {
-    if (window.confirm("Are you sure you want to delete all generated images?")) {
+    if (window.confirm("Are you sure you want to delete all generated images and edits?")) {
       await clearAllImagesFromDB();
+      await clearAllTextsFromDB();
       setImages({});
+      setPanelTexts({});
     }
   };
 
@@ -89,10 +108,14 @@ const App: React.FC = () => {
             {COMIC_PANELS.map((panel, index) => (
               <ComicPanel
                 key={panel.id}
-                panel={panel}
+                panel={{
+                  ...panel,
+                  text: panelTexts[panel.id] || panel.text
+                }}
                 panelNumber={index + 1}
                 imageUrl={images[panel.id]}
                 onSaveImage={handleSaveImage}
+                onSaveText={handleSaveText}
                 apiKey={apiKey}
                 onSaveApiKey={handleSaveApiKey}
               />

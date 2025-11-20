@@ -8,18 +8,27 @@ interface ComicPanelProps {
   panelNumber: number;
   imageUrl?: string;
   onSaveImage: (id: number, url: string) => void;
+  onSaveText: (id: number, text: string) => void;
   apiKey: string;
   onSaveApiKey: (key: string) => void;
 }
 
-const ComicPanel: React.FC<ComicPanelProps> = ({ panel, panelNumber, imageUrl, onSaveImage, apiKey, onSaveApiKey }) => {
+const ComicPanel: React.FC<ComicPanelProps> = ({ panel, panelNumber, imageUrl, onSaveImage, onSaveText, apiKey, onSaveApiKey }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedPreview, setGeneratedPreview] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showApiKeyDialog, setShowApiKeyDialog] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState('');
 
-  const handleGenerate = async () => {
+  // Text Editing State
+  const [isEditingText, setIsEditingText] = useState(false);
+  const [textInput, setTextInput] = useState(panel.text);
+
+  // Custom Regeneration State
+  const [showRegenInput, setShowRegenInput] = useState(false);
+  const [regenPrompt, setRegenPrompt] = useState('');
+
+  const handleGenerate = async (customPrompt?: string) => {
     // Check if API key is set
     if (!apiKey) {
       setShowApiKeyDialog(true);
@@ -28,9 +37,16 @@ const ComicPanel: React.FC<ComicPanelProps> = ({ panel, panelNumber, imageUrl, o
 
     setIsGenerating(true);
     setError(null);
+    setShowRegenInput(false); // Close input if open
+
     try {
       // Use the pre-defined, optimized English prompt
-      const base64Image = await generateComicPanelImage(panel.imagePrompt, apiKey);
+      let finalPrompt = panel.imagePrompt;
+      if (customPrompt) {
+        finalPrompt += ` Modification request: ${customPrompt}`;
+      }
+
+      const base64Image = await generateComicPanelImage(finalPrompt, apiKey);
       setGeneratedPreview(base64Image);
     } catch (err) {
       setError("生成失败，请检查你的 API key 是否正确。");
@@ -74,6 +90,18 @@ const ComicPanel: React.FC<ComicPanelProps> = ({ panel, panelNumber, imageUrl, o
   const handleCancel = () => {
     setGeneratedPreview(null);
     setError(null);
+  };
+
+  const handleTextSave = () => {
+    if (textInput.trim() !== panel.text) {
+      onSaveText(panel.id, textInput.trim());
+    }
+    setIsEditingText(false);
+  };
+
+  const handleTextCancel = () => {
+    setTextInput(panel.text);
+    setIsEditingText(false);
   };
 
   const activeImage = generatedPreview || imageUrl;
@@ -123,41 +151,110 @@ const ComicPanel: React.FC<ComicPanelProps> = ({ panel, panelNumber, imageUrl, o
       </div>
 
       {/* Controls Area */}
-      <div className="bg-gray-900 border-t border-gray-700 p-2 flex justify-between items-center gap-2">
-        {generatedPreview ? (
-          <>
-            <button
-              onClick={handleSave}
-              className="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-2 px-3 rounded transition-colors"
-            >
-              Save & Keep
-            </button>
-            <button
-              onClick={handleCancel}
-              className="bg-gray-600 hover:bg-gray-500 text-white text-xs font-bold py-2 px-3 rounded transition-colors"
-            >
-              Cancel
-            </button>
-          </>
-        ) : (
-          <button
-            onClick={handleGenerate}
-            disabled={isGenerating}
-            className={`w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2 px-4 rounded transition-colors flex items-center justify-center gap-2 ${isGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            {activeImage ? 'Regenerate' : 'Generate Art'}
-          </button>
+      <div className="bg-gray-900 border-t border-gray-700 p-2 flex flex-col gap-2">
+        {showRegenInput && !generatedPreview && (
+          <div className="flex flex-col gap-2 mb-1 animate-fadeIn">
+            <input
+              type="text"
+              value={regenPrompt}
+              onChange={(e) => setRegenPrompt(e.target.value)}
+              placeholder="Enter modification suggestions..."
+              className="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-gray-200 focus:outline-none focus:border-indigo-500"
+              onKeyPress={(e) => e.key === 'Enter' && handleGenerate(regenPrompt)}
+              autoFocus
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleGenerate(regenPrompt)}
+                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs py-1 rounded"
+              >
+                Confirm
+              </button>
+              <button
+                onClick={() => setShowRegenInput(false)}
+                className="bg-gray-700 hover:bg-gray-600 text-white text-xs py-1 px-2 rounded"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         )}
+
+        <div className="flex justify-between items-center gap-2">
+          {generatedPreview ? (
+            <>
+              <button
+                onClick={handleSave}
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-2 px-3 rounded transition-colors"
+              >
+                Save & Keep
+              </button>
+              <button
+                onClick={handleCancel}
+                className="bg-gray-600 hover:bg-gray-500 text-white text-xs font-bold py-2 px-3 rounded transition-colors"
+              >
+                Cancel
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => activeImage ? setShowRegenInput(!showRegenInput) : handleGenerate()}
+              disabled={isGenerating}
+              className={`w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2 px-4 rounded transition-colors flex items-center justify-center gap-2 ${isGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              {activeImage ? (showRegenInput ? 'Close Options' : 'Regenerate') : 'Generate Art'}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Text Content */}
-      <div className="p-4 flex-grow bg-gray-800">
-        <p className="text-gray-300 leading-relaxed text-sm md:text-base">
-          {panel.text}
-        </p>
+      <div className="p-4 flex-grow bg-gray-800 relative group/text">
+        {isEditingText ? (
+          <div className="flex flex-col gap-2 h-full">
+            <textarea
+              value={textInput}
+              onChange={(e) => setTextInput(e.target.value)}
+              className="w-full h-full min-h-[100px] bg-gray-700 text-gray-200 p-2 rounded border border-indigo-500 focus:outline-none text-sm resize-none"
+              autoFocus
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={handleTextSave}
+                className="text-xs bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded"
+              >
+                Save
+              </button>
+              <button
+                onClick={handleTextCancel}
+                className="text-xs bg-gray-600 hover:bg-gray-500 text-white px-2 py-1 rounded"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <button
+              onClick={() => {
+                setIsEditingText(true);
+                setTextInput(panel.text);
+              }}
+              className="absolute top-2 right-2 text-gray-500 hover:text-indigo-400 opacity-0 group-hover/text:opacity-100 transition-opacity p-1"
+              title="Edit text"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+              </svg>
+            </button>
+            <p className="text-gray-300 leading-relaxed text-sm md:text-base whitespace-pre-wrap">
+              {panel.text}
+            </p>
+          </>
+        )}
       </div>
 
       {/* API Key Dialog */}
