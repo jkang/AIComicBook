@@ -28,7 +28,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Note: Imagen models are not available in AI Studio API
         // gemini-2.5-flash-image has quota limits on free tier
         const model = genAI.getGenerativeModel({
-            model: 'imagen-4.0-generate-001'
+            model: 'gemini-2.5-flash-image'
         });
 
         const result = await model.generateContent({

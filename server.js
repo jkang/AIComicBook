@@ -38,10 +38,12 @@ app.post('/api/generate-image', async (req, res) => {
 
         const genAI = new GoogleGenerativeAI(apiKey);
 
-        // Testing Gemini 3 Pro Image Preview - experimental image generation model
-        console.log('Using model: gemini-3-pro-image-preview');
+        // Use Gemini 1.5 Flash - supports image generation via text prompts
+        // Note: Imagen models are not available in AI Studio API
+        // gemini-2.5-flash-image has quota limits on free tier
+        console.log('Using model: gemini-1.5-flash');
         const model = genAI.getGenerativeModel({
-            model: 'gemini-3-pro-image-preview'
+            model: 'gemini-1.5-flash'
         });
 
         console.log('Calling generateContent...');
