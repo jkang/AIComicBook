@@ -56,10 +56,11 @@ export const generateStoryPanels = async (
       detectedLanguage = manualLanguage;
     }
 
-    // 从 localStorage 读取用户的 API key
+    // 从 localStorage 读取用户的 API key（可选）
+    // 如果用户没有设置 API key，后端会使用环境变量的 key
     const apiKey = getApiKey();
 
-    // 调用后端 API，将 API key 放在 body 中传递
+    // 调用后端 API，将 API key 放在 body 中传递（如果有的话）
     const response = await fetch('/api/generate-story', {
       method: 'POST',
       headers: {
@@ -69,7 +70,7 @@ export const generateStoryPanels = async (
         storyText,
         keywords,
         language: detectedLanguage,
-        apiKey // API key 放在 body 中，而不是 header
+        apiKey: apiKey || undefined // 如果没有用户 key，传 undefined，后端会使用环境变量
       }),
     });
 

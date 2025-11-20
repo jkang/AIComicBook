@@ -20,24 +20,26 @@ export async function POST(req: Request) {
             keywords,
             language
         });
-        console.log('🔑 [generate-story] API key provided:', !!apiKey);
+        console.log('🔑 [generate-story] User API key provided:', !!apiKey);
 
         if (!storyText) {
             console.error('❌ [generate-story] Story text is missing');
             return NextResponse.json({ error: 'Story text is required' }, { status: 400 });
         }
 
-        // 要求用户必须提供 API key
-        if (!apiKey) {
-            console.error('❌ [generate-story] No API key provided');
+        // 优先使用用户提供的 API key，否则使用环境变量
+        const finalApiKey = apiKey || process.env.GEMINI_API_KEY;
+
+        if (!finalApiKey) {
+            console.error('❌ [generate-story] No API key available');
             return NextResponse.json({
-                error: 'API key is required. Please set your Gemini API key in settings.'
+                error: 'API key is required. Please set GEMINI_API_KEY environment variable or provide your own key.'
             }, { status: 401 });
         }
 
-        console.log('🤖 [generate-story] Initializing GoogleGenAI...');
+        console.log('🤖 [generate-story] Initializing GoogleGenAI with', apiKey ? 'user key' : 'environment key');
         // Use the new SDK
-        const ai = new GoogleGenAI({ apiKey: apiKey });
+        const ai = new GoogleGenAI({ apiKey: finalApiKey });
 
         // Generate prompt using shared helper
         console.log('📋 [generate-story] Generating prompt...');

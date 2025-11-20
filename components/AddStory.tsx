@@ -50,11 +50,8 @@ const AddStory: React.FC<AddStoryProps> = ({ onSave, onCancel }) => {
             return;
         }
 
-        // 检查是否有 API key
-        if (!hasApiKey()) {
-            setShowApiKeyModal(true);
-            return;
-        }
+        // 生成分镜不需要检查 API key，使用环境变量的 key
+        // 只有生成图片时才需要用户提供自己的 key
 
         setIsGenerating(true);
         setError(null);
