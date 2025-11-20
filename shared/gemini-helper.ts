@@ -5,8 +5,16 @@
  * 2. Character appearance consistency
  * 3. English text to avoid garbled characters
  * 4. Proper composition and lighting
+ *
+ * @param originalPrompt - The scene description from panel.imagePrompt
+ * @param storyVisualStyle - The visual style for this story (e.g., "comic book art style, watercolor...")
+ * @param characters - Array of character descriptions (e.g., ["Alice (5-year-old girl...)", "Bob (...)"])
  */
-export function enhanceComicPrompt(originalPrompt: string, storyVisualStyle: string | null = null): string {
+export function enhanceComicPrompt(
+  originalPrompt: string,
+  storyVisualStyle: string | null = null,
+  characters: string[] = []
+): string {
   // If prompt already looks complete (contains detailed style info), use as-is
   if (originalPrompt.length > 200 &&
     (originalPrompt.includes('style') || originalPrompt.includes('aesthetic'))) {
@@ -14,7 +22,14 @@ export function enhanceComicPrompt(originalPrompt: string, storyVisualStyle: str
   }
 
   // Use story-specific visual style if provided, otherwise use a neutral base
-  const visualStyle = storyVisualStyle + ", 4k resolution, aspect ratio 4:3.";
+  const visualStyle = storyVisualStyle
+    ? `${storyVisualStyle}, 4k resolution, aspect ratio 4:3.`
+    : "4k resolution, aspect ratio 4:3.";
+
+  // Format characters for prompt (join with commas)
+  const charactersStr = characters.length > 0
+    ? characters.join(', ') + '.'
+    : '';
 
   // Additional professional guidelines
   const guidelines = [
@@ -24,8 +39,9 @@ export function enhanceComicPrompt(originalPrompt: string, storyVisualStyle: str
     "Ensure proper depth and atmospheric perspective."
   ].join(' ');
 
-  // Combine: Visual Style + Original Prompt + Guidelines
-  return `${visualStyle}. ${originalPrompt} ${guidelines}`;
+  // Combine: Visual Style + Characters + Scene Description + Guidelines
+  // This matches the pattern in constants.ts: ${STYLE_BASE} ... ${CHAR_XIAODONG} ... ${CHAR_TIEDAN} ...
+  return `${visualStyle} ${charactersStr} ${originalPrompt} ${guidelines}`;
 }
 
 /**

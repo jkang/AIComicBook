@@ -4,7 +4,7 @@ import { enhanceComicPrompt } from '../../../shared/gemini-helper';
 
 export async function POST(req: Request) {
     try {
-        const { prompt, apiKey } = await req.json();
+        const { prompt, apiKey, visualStyle, characters } = await req.json();
 
         if (!prompt) {
             return NextResponse.json({ error: 'Prompt is required' }, { status: 400 });
@@ -18,7 +18,8 @@ export async function POST(req: Request) {
         }
 
         // Enhance prompt for consistency using shared helper
-        const enhancedPrompt = enhanceComicPrompt(prompt);
+        // Pass visualStyle and characters to maintain consistency across panels
+        const enhancedPrompt = enhanceComicPrompt(prompt, visualStyle || null, characters || []);
         console.log('📋 [generate-image] Enhanced prompt:', enhancedPrompt);
 
         // Use the new SDK for Gemini 2.5 Flash Image

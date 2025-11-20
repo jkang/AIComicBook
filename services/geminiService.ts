@@ -2,7 +2,11 @@
 import { ComicPanelData } from '../types';
 import { getApiKey } from './apiKeyService';
 
-export const generateComicPanelImage = async (prompt: string): Promise<string> => {
+export const generateComicPanelImage = async (
+  prompt: string,
+  visualStyle?: string,
+  characters?: string[]
+): Promise<string> => {
   try {
     // 从 localStorage 读取用户的 API key
     const apiKey = getApiKey();
@@ -15,7 +19,9 @@ export const generateComicPanelImage = async (prompt: string): Promise<string> =
       },
       body: JSON.stringify({
         prompt,
-        apiKey // API key 放在 body 中，而不是 header
+        apiKey, // API key 放在 body 中，而不是 header
+        visualStyle, // 传递视觉风格
+        characters // 传递角色描述
       }),
     });
 

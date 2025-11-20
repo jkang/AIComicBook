@@ -7,6 +7,10 @@ const CHAR_TIEDAN = "Tiedan (a rusty mechanical robotic rooster with glowing opt
 const CHAR_XIAOZHI = "Xiaozhi (a holographic AI avatar, glowing blue orb with a cute digital face)";
 const CHAR_CHEN = "Chen Xiao (sleek elite man in a pristine white high-tech suit, rimless glasses)";
 
+// Export for use in default story
+export const DEFAULT_VISUAL_STYLE = STYLE_BASE;
+export const DEFAULT_CHARACTERS = [CHAR_XIAODONG, CHAR_TIEDAN, CHAR_XIAOZHI, CHAR_CHEN];
+
 export const COMIC_PANELS: ComicPanelData[] = [
   {
     id: 1,

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { COMIC_PANELS } from '../constants';
+import { COMIC_PANELS, DEFAULT_VISUAL_STYLE, DEFAULT_CHARACTERS } from '../constants';
 import ComicPanel from '../components/ComicPanel';
 import AddStory from '../components/AddStory';
 import ApiKeyModal from '../components/ApiKeyModal';
@@ -199,6 +199,24 @@ export default function Home() {
         return 'AI 宕掉的 72 小时';
     };
 
+    const getCurrentVisualStyle = (): string | undefined => {
+        if (viewMode === 'custom-story' && selectedStoryId) {
+            const story = customStories.find(s => s.id === selectedStoryId);
+            return story?.visualStyle;
+        }
+        // For default story, use the default visual style
+        return DEFAULT_VISUAL_STYLE;
+    };
+
+    const getCurrentCharacters = (): string[] | undefined => {
+        if (viewMode === 'custom-story' && selectedStoryId) {
+            const story = customStories.find(s => s.id === selectedStoryId);
+            return story?.characters;
+        }
+        // For default story, use the default characters
+        return DEFAULT_CHARACTERS;
+    };
+
     if (viewMode === 'add-story') {
         return (
             <AddStory
@@ -311,6 +329,8 @@ export default function Home() {
                                 }}
                                 panelNumber={index + 1}
                                 imageUrl={getCurrentImage(panel.id)}
+                                visualStyle={getCurrentVisualStyle()}
+                                characters={getCurrentCharacters()}
                                 onSaveImage={handleSaveImage}
                                 onSaveText={handleSaveText}
                             />

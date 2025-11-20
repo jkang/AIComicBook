@@ -10,11 +10,13 @@ interface ComicPanelProps {
   panel: ComicPanelData;
   panelNumber: number;
   imageUrl?: string;
+  visualStyle?: string;
+  characters?: string[];
   onSaveImage: (id: number, url: string) => void;
   onSaveText: (id: number, text: string) => void;
 }
 
-const ComicPanel: React.FC<ComicPanelProps> = ({ panel, panelNumber, imageUrl, onSaveImage, onSaveText }) => {
+const ComicPanel: React.FC<ComicPanelProps> = ({ panel, panelNumber, imageUrl, visualStyle, characters, onSaveImage, onSaveText }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedPreview, setGeneratedPreview] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -54,7 +56,8 @@ const ComicPanel: React.FC<ComicPanelProps> = ({ panel, panelNumber, imageUrl, o
         finalPrompt += ` Modification request: ${customPrompt}`;
       }
 
-      const base64Image = await generateComicPanelImage(finalPrompt);
+      // Pass visualStyle and characters to maintain consistency across panels
+      const base64Image = await generateComicPanelImage(finalPrompt, visualStyle, characters);
       setGeneratedPreview(base64Image);
     } catch (err: any) {
       console.error('Error generating image:', err);
