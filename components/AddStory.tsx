@@ -3,6 +3,7 @@ import { generateStoryPanels } from '../services/geminiService';
 import { Story, ComicPanelData } from '../types';
 import { hasApiKey } from '../services/apiKeyService';
 import ApiKeyModal from './ApiKeyModal';
+import ErrorModal, { ErrorType } from './ErrorModal';
 
 interface AddStoryProps {
     onSave: (story: Story) => void;
@@ -28,6 +29,11 @@ const AddStory: React.FC<AddStoryProps> = ({ onSave, onCancel }) => {
 
     // API Key Modal State
     const [showApiKeyModal, setShowApiKeyModal] = useState(false);
+
+    // Error Modal State
+    const [showErrorModal, setShowErrorModal] = useState(false);
+    const [errorType, setErrorType] = useState<ErrorType>('general');
+    const [errorMessage, setErrorMessage] = useState<string>('');
 
     const charCount = storyText.length;
     const maxChars = 10000;
@@ -61,19 +67,27 @@ const AddStory: React.FC<AddStoryProps> = ({ onSave, onCancel }) => {
             const result = await generateStoryPanels(storyText, keywordArray, selectedLanguage);
             setGeneratedResult(result);
         } catch (err: any) {
-            // Improved error handling
-            let errorMessage = '生成失败，请稍后重试';
+            console.error('Error generating story:', err);
 
-            if (err.message?.includes('fetch') || err.message?.includes('Failed to fetch')) {
-                errorMessage = '无法连接到服务器。请确保：\n1. 已启动本地服务器（使用 vercel dev）\n2. 或已部署到 Vercel 并设置了 GEMINI_API_KEY 环境变量';
-            } else if (err.message?.includes('API key')) {
-                errorMessage = 'API Key 未配置或无效。请在环境变量中设置 GEMINI_API_KEY';
-            } else if (err.message) {
-                errorMessage = err.message;
+            // 解析错误响应
+            let type: ErrorType = 'general';
+            let message = err.message || '生成失败，请稍后重试。';
+
+            // 如果是 fetch 错误，尝试解析响应
+            if (err.message && err.message.includes('Failed to generate story')) {
+                // 从错误消息中提取错误类型
+                if (err.message.includes('quota') || err.message.includes('rate limit')) {
+                    type = 'quota';
+                } else if (err.message.includes('API key') || err.message.includes('Invalid')) {
+                    type = 'auth';
+                } else if (err.message.includes('network') || err.message.includes('Network')) {
+                    type = 'network';
+                }
             }
 
-            setError(errorMessage);
-            console.error(err);
+            setErrorType(type);
+            setErrorMessage(message);
+            setShowErrorModal(true);
         } finally {
             setIsGenerating(false);
         }
@@ -130,6 +144,14 @@ const AddStory: React.FC<AddStoryProps> = ({ onSave, onCancel }) => {
                 isOpen={showApiKeyModal}
                 onClose={() => setShowApiKeyModal(false)}
                 onSave={handleApiKeySaved}
+            />
+
+            {/* Error Modal */}
+            <ErrorModal
+                isOpen={showErrorModal}
+                onClose={() => setShowErrorModal(false)}
+                errorType={errorType}
+                errorMessage={errorMessage}
             />
 
             <div className="min-h-screen bg-gray-900 text-gray-200 p-4 md:p-8">
