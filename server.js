@@ -1,23 +1,108 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-interface ComicPanelData {
-    id: number;
-    text: string;
-    imagePrompt: string;
+dotenv.config({ path: '.env.local' });
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+const apiKey = process.env.GEMINI_API_KEY;
+
+if (!apiKey) {
+    console.warn('⚠️  Warning: GEMINI_API_KEY not found in .env.local');
 }
 
-interface StoryResult {
-    characters: string[];
-    panels: ComicPanelData[];
-    optimizedStory: string;
-}
+// Generate Image endpoint
+app.post('/api/generate-image', async (req, res) => {
+    try {
+        const { prompt } = req.body;
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-    if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed' });
+        if (!prompt) {
+            return res.status(400).json({ error: 'Prompt is required' });
+        }
+
+        if (!apiKey) {
+            return res.status(500).json({ error: 'API key not configured' });
+        }
+
+        // Enhance prompt for consistency (as a professional comic designer)
+        const enhancedPrompt = enhanceComicPrompt(prompt);
+
+        const genAI = new GoogleGenerativeAI(apiKey);
+
+        // Use Gemini 2.5 Flash Image - best image generation model
+        const model = genAI.getGenerativeModel({
+            model: 'gemini-2.5-flash-image'
+        });
+
+        const result = await model.generateContent({
+            contents: [{
+                role: 'user',
+                parts: [{
+                    text: enhancedPrompt
+                }]
+            }],
+            generationConfig: {
+                temperature: 0.4,
+                candidateCount: 1,
+            }
+        });
+
+        const response = result.response;
+        const imageData = response.candidates?.[0]?.content?.parts?.[0]?.inlineData;
+
+        if (!imageData || !imageData.data) {
+            return res.status(500).json({ error: 'No image data received from API' });
+        }
+
+        res.json({
+            image: `data:${imageData.mimeType};base64,${imageData.data}`
+        });
+    } catch (error) {
+        console.error('Error generating image:', error);
+        res.status(500).json({
+            error: 'Failed to generate image',
+            details: error.message
+        });
+    }
+});
+
+/**
+ * Enhance comic prompt for consistency
+ * Professional comic designer best practices:
+ * 1. Use story-specific visual style
+ * 2. Character appearance consistency
+ * 3. English text to avoid garbled characters
+ * 4. Proper composition and lighting
+ */
+function enhanceComicPrompt(originalPrompt, storyVisualStyle = null) {
+    // If prompt already looks complete (contains detailed style info), use as-is
+    if (originalPrompt.length > 200 &&
+        (originalPrompt.includes('style') || originalPrompt.includes('aesthetic'))) {
+        return originalPrompt;
     }
 
+    // Use story-specific visual style if provided, otherwise use a neutral base
+    const visualStyle = storyVisualStyle ||
+        "comic book art style, cel-shaded, intricate details, atmospheric lighting, 4k resolution";
+
+    // Additional professional guidelines
+    const guidelines = [
+        "Use English for any text or UI elements in the image to avoid garbled characters.",
+        "Maintain consistent character appearances if characters are mentioned.",
+        "Apply cinematic composition with clear focal points.",
+        "Ensure proper depth and atmospheric perspective."
+    ].join(' ');
+
+    // Combine: Visual Style + Original Prompt + Guidelines
+    return `${visualStyle}. ${originalPrompt} ${guidelines}`;
+}
+
+// Generate Story endpoint
+app.post('/api/generate-story', async (req, res) => {
     try {
         const { storyText, keywords = [] } = req.body;
 
@@ -25,12 +110,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return res.status(400).json({ error: 'Story text is required' });
         }
 
-        const apiKey = process.env.GEMINI_API_KEY;
         if (!apiKey) {
             return res.status(500).json({ error: 'API key not configured' });
         }
 
-        // Use Google AI Studio API (not Vertex AI)
         const genAI = new GoogleGenerativeAI(apiKey);
 
         // Use Gemini 2.5 Flash - latest and best Flash model for text generation
@@ -38,12 +121,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             model: 'gemini-2.5-flash'
         });
 
-        // Determine panel count based on story length
         const charCount = storyText.length;
         const targetPanelCount = charCount <= 1500 ? '8-10' : '15-20';
         const maxPanels = charCount <= 1500 ? 10 : 20;
 
-        // Craft the story optimization prompt
         const keywordsText = keywords.length > 0 ? `\nAdditional keywords/themes to emphasize: ${keywords.join(', ')}` : '';
 
         const prompt = `You are a master storyteller and comic book writer with expertise in visual narrative structure. Your task is to transform the user's story into an engaging, visually-rich comic book narrative.
@@ -132,20 +213,28 @@ Generate the JSON now:`;
         const response = result.response;
         const text = response.text();
 
-        // Parse JSON response
-        const storyResult: StoryResult = JSON.parse(text);
+        const storyResult = JSON.parse(text);
 
-        // Validate and limit panel count
         if (storyResult.panels.length > maxPanels) {
             storyResult.panels = storyResult.panels.slice(0, maxPanels);
         }
 
-        return res.status(200).json(storyResult);
-    } catch (error: any) {
+        res.json(storyResult);
+    } catch (error) {
         console.error('Error generating story:', error);
-        return res.status(500).json({
+        res.status(500).json({
             error: 'Failed to generate story',
             details: error.message
         });
     }
-}
+});
+
+const PORT = 3001;
+app.listen(PORT, () => {
+    console.log(`🚀 API Server running on http://localhost:${PORT}`);
+    if (apiKey) {
+        console.log('✅ GEMINI_API_KEY loaded');
+    } else {
+        console.log('⚠️  GEMINI_API_KEY not found - API calls will fail');
+    }
+});

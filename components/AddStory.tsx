@@ -74,6 +74,7 @@ const AddStory: React.FC<AddStoryProps> = ({ onSave, onCancel }) => {
             title: title.trim(),
             panels: generatedResult.panels,
             characters: generatedResult.characters,
+            visualStyle: generatedResult.visualStyle,
             createdAt: Date.now(),
         };
 
@@ -204,6 +205,16 @@ const AddStory: React.FC<AddStoryProps> = ({ onSave, onCancel }) => {
                 ) : (
                     /* Preview Generated Story */
                     <div className="space-y-6">
+                        {/* Visual Style */}
+                        {generatedResult.visualStyle && (
+                            <div className="bg-gray-800 border border-indigo-700 rounded-lg p-6">
+                                <h2 className="text-xl font-bold text-indigo-400 mb-3">🎨 视觉风格</h2>
+                                <p className="text-gray-300 text-sm italic leading-relaxed">
+                                    {generatedResult.visualStyle}
+                                </p>
+                            </div>
+                        )}
+
                         {/* Characters */}
                         {generatedResult.characters.length > 0 && (
                             <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
@@ -217,7 +228,6 @@ const AddStory: React.FC<AddStoryProps> = ({ onSave, onCancel }) => {
                                 </div>
                             </div>
                         )}
-
                         {/* Panels Preview */}
                         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
                             <h2 className="text-xl font-bold text-indigo-400 mb-4">

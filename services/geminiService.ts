@@ -25,6 +25,7 @@ export const generateComicPanelImage = async (prompt: string): Promise<string> =
 };
 
 export interface StoryGenerationResult {
+  visualStyle: string;
   characters: string[];
   panels: ComicPanelData[];
   optimizedStory: string;

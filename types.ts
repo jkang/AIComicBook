@@ -10,5 +10,6 @@ export interface Story {
   title: string;
   panels: ComicPanelData[];
   characters: string[];
+  visualStyle: string; // Base visual style for this story
   createdAt: number;
 }

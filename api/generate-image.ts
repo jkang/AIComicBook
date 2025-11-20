@@ -18,19 +18,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return res.status(500).json({ error: 'API key not configured' });
         }
 
+        // Enhance prompt for consistency
+        const enhancedPrompt = enhanceComicPrompt(prompt);
+
         // Use Google AI Studio API (not Vertex AI)
         const genAI = new GoogleGenerativeAI(apiKey);
 
-        // Use Imagen 3 for image generation (more cost-effective than Imagen 4)
+        // Use Gemini 2.5 Flash Image - best image generation model
         const model = genAI.getGenerativeModel({
-            model: 'imagen-3.0-generate-001'
+            model: 'gemini-2.5-flash-image'
         });
 
         const result = await model.generateContent({
             contents: [{
                 role: 'user',
                 parts: [{
-                    text: prompt
+                    text: enhancedPrompt
                 }]
             }],
             generationConfig: {
@@ -57,4 +60,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             details: error.message
         });
     }
+}
+
+/**
+ * Enhance comic prompt for consistency
+ */
+function enhanceComicPrompt(originalPrompt: string): string {
+    const STYLE_BASE = "comic book art style, retro-futuristic 2050 China aesthetics, cel-shaded, intricate details, atmospheric lighting, 4k resolution.";
+
+    if (originalPrompt.includes('comic book art style') ||
+        originalPrompt.includes(STYLE_BASE)) {
+        return originalPrompt;
+    }
+
+    const guidelines = [
+        "Use English for any text or UI elements in the image to avoid garbled characters.",
+        "Maintain consistent character appearances if characters are mentioned.",
+        "Apply cinematic composition with clear focal points.",
+        "Ensure proper depth and atmospheric perspective."
+    ].join(' ');
+
+    return `${STYLE_BASE} ${originalPrompt} ${guidelines}`;
 }
