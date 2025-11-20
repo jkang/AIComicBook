@@ -1,23 +1,18 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { NextResponse } from 'next/server';
 import { GoogleGenAI } from "@google/genai";
-// @ts-ignore - shared helper is JS
-import { enhanceComicPrompt } from '../shared/gemini-helper.js';
+import { enhanceComicPrompt } from '../../../shared/gemini-helper';
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-    if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed' });
-    }
-
+export async function POST(req: Request) {
     try {
-        const { prompt } = req.body;
+        const { prompt } = await req.json();
 
         if (!prompt) {
-            return res.status(400).json({ error: 'Prompt is required' });
+            return NextResponse.json({ error: 'Prompt is required' }, { status: 400 });
         }
 
         const apiKey = process.env.GEMINI_API_KEY;
         if (!apiKey) {
-            return res.status(500).json({ error: 'API key not configured' });
+            return NextResponse.json({ error: 'API key not configured' }, { status: 500 });
         }
 
         // Enhance prompt for consistency using shared helper
@@ -37,8 +32,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Handle the response to find image data
         let imageBase64 = null;
 
-        // The response structure in the new SDK might be slightly different
-        // We need to check where the inlineData is located
         if (response.candidates && response.candidates[0] && response.candidates[0].content && response.candidates[0].content.parts) {
             for (const part of response.candidates[0].content.parts) {
                 if (part.inlineData) {
@@ -50,17 +43,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         if (!imageBase64) {
             console.error('No image data in response', JSON.stringify(response, null, 2));
-            return res.status(500).json({ error: 'No image data received from API' });
+            return NextResponse.json({ error: 'No image data received from API' }, { status: 500 });
         }
 
-        return res.status(200).json({
+        return NextResponse.json({
             image: `data:image/png;base64,${imageBase64}`
         });
     } catch (error: any) {
         console.error('Error generating image:', error);
-        return res.status(500).json({
+        return NextResponse.json({
             error: 'Failed to generate image',
             details: error.message
-        });
+        }, { status: 500 });
     }
 }

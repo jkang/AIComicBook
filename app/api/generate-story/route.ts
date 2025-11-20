@@ -1,35 +1,26 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { NextResponse } from 'next/server';
 import { GoogleGenAI } from "@google/genai";
-// @ts-ignore - shared helper is JS
-import { generateStoryPrompt } from '../shared/gemini-helper.js';
-
-interface ComicPanelData {
-    id: number;
-    text: string;
-    imagePrompt: string;
-}
+import { generateStoryPrompt } from '../../../shared/gemini-helper';
+import { ComicPanelData } from '../../../types';
 
 interface StoryResult {
     characters: string[];
     panels: ComicPanelData[];
     optimizedStory: string;
+    visualStyle: string;
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-    if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed' });
-    }
-
+export async function POST(req: Request) {
     try {
-        const { storyText, keywords = [], language = 'en' } = req.body;
+        const { storyText, keywords = [], language = 'en' } = await req.json();
 
         if (!storyText) {
-            return res.status(400).json({ error: 'Story text is required' });
+            return NextResponse.json({ error: 'Story text is required' }, { status: 400 });
         }
 
         const apiKey = process.env.GEMINI_API_KEY;
         if (!apiKey) {
-            return res.status(500).json({ error: 'API key not configured' });
+            return NextResponse.json({ error: 'API key not configured' }, { status: 500 });
         }
 
         // Use the new SDK
@@ -50,9 +41,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             }
         });
 
-        // In the new SDK, response.text() is available directly on the response object or via candidates
-        // Let's check the structure. Usually response.text() helper exists if using the high-level client
-        // But for safety, let's extract from candidates
         let text = "";
         if (response.candidates && response.candidates[0] && response.candidates[0].content && response.candidates[0].content.parts) {
             for (const part of response.candidates[0].content.parts) {
@@ -64,7 +52,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         if (!text) {
             console.error('❌ No text generated in response:', JSON.stringify(response, null, 2));
-            throw new Error("No text generated");
+            return NextResponse.json({ error: 'No text generated' }, { status: 500 });
         }
 
         // Clean up text if it contains markdown code blocks
@@ -77,7 +65,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         } catch (parseError) {
             console.error('❌ JSON Parse Error:', parseError);
             console.error('Raw Text:', text);
-            throw new Error("Failed to parse AI response as JSON");
+            return NextResponse.json({ error: 'Failed to parse AI response as JSON' }, { status: 500 });
         }
 
         // Validate and limit panel count
@@ -85,12 +73,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             storyResult.panels = storyResult.panels.slice(0, maxPanels);
         }
 
-        return res.status(200).json(storyResult);
+        return NextResponse.json(storyResult);
     } catch (error: any) {
         console.error('❌ Error generating story:', error);
-        return res.status(500).json({
+        return NextResponse.json({
             error: 'Failed to generate story',
             details: error.message
-        });
+        }, { status: 500 });
     }
 }

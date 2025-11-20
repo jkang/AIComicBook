@@ -6,50 +6,50 @@
  * 3. English text to avoid garbled characters
  * 4. Proper composition and lighting
  */
-export function enhanceComicPrompt(originalPrompt, storyVisualStyle = null) {
-    // If prompt already looks complete (contains detailed style info), use as-is
-    if (originalPrompt.length > 200 &&
-        (originalPrompt.includes('style') || originalPrompt.includes('aesthetic'))) {
-        return originalPrompt;
-    }
+export function enhanceComicPrompt(originalPrompt: string, storyVisualStyle: string | null = null): string {
+  // If prompt already looks complete (contains detailed style info), use as-is
+  if (originalPrompt.length > 200 &&
+    (originalPrompt.includes('style') || originalPrompt.includes('aesthetic'))) {
+    return originalPrompt;
+  }
 
-    // Use story-specific visual style if provided, otherwise use a neutral base
-    const visualStyle = storyVisualStyle ||
-        "comic book art style, cel-shaded, intricate details, atmospheric lighting, 4k resolution";
+  // Use story-specific visual style if provided, otherwise use a neutral base
+  const visualStyle = storyVisualStyle ||
+    "comic book art style, cel-shaded, intricate details, atmospheric lighting, 4k resolution";
 
-    // Additional professional guidelines
-    const guidelines = [
-        "Use English for any text or UI elements in the image to avoid garbled characters.",
-        "Maintain consistent character appearances if characters are mentioned.",
-        "Apply cinematic composition with clear focal points.",
-        "Ensure proper depth and atmospheric perspective."
-    ].join(' ');
+  // Additional professional guidelines
+  const guidelines = [
+    "Use English for any text or UI elements in the image to avoid garbled characters.",
+    "Maintain consistent character appearances if characters are mentioned.",
+    "Apply cinematic composition with clear focal points.",
+    "Ensure proper depth and atmospheric perspective."
+  ].join(' ');
 
-    // Combine: Visual Style + Original Prompt + Guidelines
-    return `${visualStyle}. ${originalPrompt} ${guidelines}`;
+  // Combine: Visual Style + Original Prompt + Guidelines
+  return `${visualStyle}. ${originalPrompt} ${guidelines}`;
 }
 
 /**
  * Generate prompt for story creation
  */
-export function generateStoryPrompt(storyText, keywords = [], language = 'en') {
-    const keywordsText = keywords.length > 0 ? `\nAdditional keywords/themes to emphasize: ${keywords.join(', ')}` : '';
+export function generateStoryPrompt(storyText: string, keywords: string[] = [], language: string = 'en'): { prompt: string; maxPanels: number } {
+  const keywordsText = keywords.length > 0 ? `\nAdditional keywords/themes to emphasize: ${keywords.join(', ')}` : '';
 
-    // Map language codes to full names
-    const languageNames = {
-        'zh': 'Chinese',
-        'en': 'English',
-        'ja': 'Japanese',
-        'ko': 'Korean'
-    };
-    const languageName = languageNames[language] || 'English';
+  // Map language codes to full names
+  const languageNames: Record<string, string> = {
+    'zh': 'Chinese',
+    'en': 'English',
+    'ja': 'Japanese',
+    'ko': 'Korean'
+  };
+  const languageName = languageNames[language] || 'English';
 
-    // Determine panel count based on story length
-    const charCount = storyText.length;
-    const targetPanelCount = charCount <= 1500 ? '8-10' : '15-20';
-    const maxPanels = charCount <= 1500 ? 10 : 20;
+  // Determine panel count based on story length
+  const charCount = storyText.length;
+  const targetPanelCount = charCount <= 1500 ? '8-10' : '15-20';
+  const maxPanels = charCount <= 1500 ? 10 : 20;
 
-    const prompt = `You are a master storyteller and comic book writer with expertise in visual narrative structure. Your task is to transform the user's story into an engaging, visually-rich comic book narrative.
+  const prompt = `You are a master storyteller and comic book writer with expertise in visual narrative structure. Your task is to transform the user's story into an engaging, visually-rich comic book narrative.
 
 USER'S STORY:
 ${storyText}
@@ -135,5 +135,5 @@ OUTPUT FORMAT (JSON):
 
 Generate the JSON now:`;
 
-    return { prompt, maxPanels };
+  return { prompt, maxPanels };
 }
