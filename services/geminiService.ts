@@ -66,6 +66,23 @@ export const generateStoryPanels = async (
     }
 
     const data = await response.json();
+
+    // Normalize characters if they are objects (AI sometimes returns objects despite prompt)
+    if (Array.isArray(data.characters)) {
+      data.characters = data.characters.map((char: any) => {
+        if (typeof char === 'object' && char !== null) {
+          // If it's an object like { name: "...", description: "..." }
+          const name = char.name || char.Name || '';
+          const desc = char.description || char.Description || char.desc || '';
+          if (name && desc) return `${name}: ${desc}`;
+          if (name) return name;
+          if (desc) return desc;
+          return JSON.stringify(char); // Fallback
+        }
+        return String(char);
+      });
+    }
+
     return data;
   } catch (error) {
     console.error('Error generating story:', error);
