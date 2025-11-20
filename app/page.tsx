@@ -4,10 +4,12 @@ import React, { useState, useEffect } from 'react';
 import { COMIC_PANELS } from '../constants';
 import ComicPanel from '../components/ComicPanel';
 import AddStory from '../components/AddStory';
+import ApiKeyModal from '../components/ApiKeyModal';
 import { getAllImagesFromDB, saveImageToDB, clearAllImagesFromDB, getAllTextsFromDB, saveTextToDB, clearAllTextsFromDB, getAllStoriesFromDB, saveStoryToDB, deleteStoryFromDB } from '../services/storageService';
 import { panelImages } from '../assets/images';
 import { Story } from '../types';
 import { exportStoryAsHTML } from '../services/exportService';
+import { Settings } from 'lucide-react';
 
 type ViewMode = 'default' | 'add-story' | 'custom-story';
 
@@ -24,6 +26,9 @@ export default function Home() {
     const [viewMode, setViewMode] = useState<ViewMode>('default');
     const [customStories, setCustomStories] = useState<Story[]>([]);
     const [selectedStoryId, setSelectedStoryId] = useState<string | null>(null);
+
+    // API Key Modal State
+    const [showApiKeyModal, setShowApiKeyModal] = useState(false);
 
     // Load data from IndexedDB on mount
     useEffect(() => {
@@ -183,6 +188,13 @@ export default function Home() {
 
     return (
         <div className="min-h-screen bg-gray-900 text-gray-200 font-sans">
+            {/* API Key Modal */}
+            <ApiKeyModal
+                isOpen={showApiKeyModal}
+                onClose={() => setShowApiKeyModal(false)}
+                onSave={() => setShowApiKeyModal(false)}
+            />
+
             <header className="bg-gray-800/80 backdrop-blur-sm sticky top-0 z-20 shadow-lg">
                 <div className="container mx-auto px-4 py-4">
                     <div className="flex justify-between items-center mb-3">
@@ -192,7 +204,7 @@ export default function Home() {
                             </h1>
                             <p className="text-gray-400 mt-1 text-sm">AI Comic Book Generator</p>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 items-center">
                             {viewMode === 'custom-story' && (
                                 <>
                                     <button
@@ -214,6 +226,14 @@ export default function Home() {
                                 className="text-xs text-indigo-400 hover:text-indigo-300 border border-indigo-900 hover:bg-indigo-900/30 px-3 py-1 rounded transition-colors"
                             >
                                 + 添加故事
+                            </button>
+                            {/* Settings Icon */}
+                            <button
+                                onClick={() => setShowApiKeyModal(true)}
+                                className="p-2 text-gray-400 hover:text-indigo-400 hover:bg-indigo-900/30 rounded-lg transition-all group"
+                                title="API Key 设置"
+                            >
+                                <Settings className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
                             </button>
                         </div>
                     </div>
