@@ -4,6 +4,7 @@ import { ComicPanelData } from '../types';
 import { generateComicPanelImage } from '../services/geminiService';
 import { hasApiKey } from '../services/apiKeyService';
 import ApiKeyModal from './ApiKeyModal';
+import ErrorModal, { ErrorType } from './ErrorModal';
 
 interface ComicPanelProps {
   panel: ComicPanelData;
@@ -29,6 +30,11 @@ const ComicPanel: React.FC<ComicPanelProps> = ({ panel, panelNumber, imageUrl, o
   // API Key Modal State
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
 
+  // Error Modal State
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorType, setErrorType] = useState<ErrorType>('general');
+  const [errorMessage, setErrorMessage] = useState<string>('');
+
   const handleGenerate = async (customPrompt?: string) => {
     // 检查是否有 API key
     if (!hasApiKey()) {
@@ -49,9 +55,28 @@ const ComicPanel: React.FC<ComicPanelProps> = ({ panel, panelNumber, imageUrl, o
 
       const base64Image = await generateComicPanelImage(finalPrompt);
       setGeneratedPreview(base64Image);
-    } catch (err) {
-      setError("生成失败，请稍后重试。");
-      console.error(err);
+    } catch (err: any) {
+      console.error('Error generating image:', err);
+
+      // 解析错误响应
+      let type: ErrorType = 'general';
+      let message = err.message || '生成失败，请稍后重试。';
+
+      // 如果是 fetch 错误，尝试解析响应
+      if (err.message && err.message.includes('Failed to generate image')) {
+        // 从错误消息中提取错误类型
+        if (err.message.includes('quota') || err.message.includes('rate limit')) {
+          type = 'quota';
+        } else if (err.message.includes('API key') || err.message.includes('Invalid')) {
+          type = 'auth';
+        } else if (err.message.includes('network') || err.message.includes('Network')) {
+          type = 'network';
+        }
+      }
+
+      setErrorType(type);
+      setErrorMessage(message);
+      setShowErrorModal(true);
     } finally {
       setIsGenerating(false);
     }
@@ -95,6 +120,14 @@ const ComicPanel: React.FC<ComicPanelProps> = ({ panel, panelNumber, imageUrl, o
         isOpen={showApiKeyModal}
         onClose={() => setShowApiKeyModal(false)}
         onSave={handleApiKeySaved}
+      />
+
+      {/* Error Modal */}
+      <ErrorModal
+        isOpen={showErrorModal}
+        onClose={() => setShowErrorModal(false)}
+        errorType={errorType}
+        errorMessage={errorMessage}
       />
 
       <div className="bg-gray-800 border border-gray-700 rounded-lg shadow-lg overflow-hidden flex flex-col h-full transform transition-transform hover:shadow-indigo-500/20 relative group">

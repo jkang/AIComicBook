@@ -72,9 +72,37 @@ export async function POST(req: Request) {
             message: error.message,
             cause: error.cause
         });
+
+        // 识别不同类型的错误
+        let errorType = 'general';
+        let errorMessage = 'Failed to generate image';
+        let statusCode = 500;
+
+        const errorMsg = error.message?.toLowerCase() || '';
+
+        // 配额错误
+        if (errorMsg.includes('quota') || errorMsg.includes('rate limit') || errorMsg.includes('429')) {
+            errorType = 'quota';
+            errorMessage = 'API quota exceeded. Please check your Gemini API quota.';
+            statusCode = 429;
+        }
+        // 认证错误
+        else if (errorMsg.includes('api key') || errorMsg.includes('unauthorized') || errorMsg.includes('401') || errorMsg.includes('403')) {
+            errorType = 'auth';
+            errorMessage = 'Invalid API key. Please check your Gemini API key.';
+            statusCode = 401;
+        }
+        // 网络错误
+        else if (errorMsg.includes('network') || errorMsg.includes('fetch') || errorMsg.includes('timeout')) {
+            errorType = 'network';
+            errorMessage = 'Network error. Please check your connection and try again.';
+            statusCode = 503;
+        }
+
         return NextResponse.json({
-            error: 'Failed to generate image',
+            error: errorMessage,
+            errorType: errorType,
             details: error.message
-        }, { status: 500 });
+        }, { status: statusCode });
     }
 }
