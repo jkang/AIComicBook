@@ -11,19 +11,10 @@ interface StoryResult {
 }
 
 export async function POST(req: Request) {
-    console.log('🚀 [generate-story] API called');
-
     try {
         const { storyText, keywords = [], language = 'en', apiKey } = await req.json();
-        console.log('📝 [generate-story] Request data:', {
-            storyTextLength: storyText?.length,
-            keywords,
-            language
-        });
-        console.log('🔑 [generate-story] User API key provided:', !!apiKey);
 
         if (!storyText) {
-            console.error('❌ [generate-story] Story text is missing');
             return NextResponse.json({ error: 'Story text is required' }, { status: 400 });
         }
 
@@ -31,22 +22,17 @@ export async function POST(req: Request) {
         const finalApiKey = apiKey || process.env.GEMINI_API_KEY;
 
         if (!finalApiKey) {
-            console.error('❌ [generate-story] No API key available');
             return NextResponse.json({
                 error: 'API key is required. Please set GEMINI_API_KEY environment variable or provide your own key.'
             }, { status: 401 });
         }
 
-        console.log('🤖 [generate-story] Initializing GoogleGenAI with', apiKey ? 'user key' : 'environment key');
         // Use the new SDK
         const ai = new GoogleGenAI({ apiKey: finalApiKey });
 
         // Generate prompt using shared helper
-        console.log('📋 [generate-story] Generating prompt...');
         const { prompt, maxPanels } = generateStoryPrompt(storyText, keywords, language);
-        console.log('📋 [generate-story] Max panels:', maxPanels);
 
-        console.log('🌐 [generate-story] Calling Gemini API...');
         const response = await ai.models.generateContent({
             model: "gemini-2.5-flash",
             contents: prompt,
@@ -59,8 +45,6 @@ export async function POST(req: Request) {
             }
         });
 
-        console.log('✅ [generate-story] Gemini API response received');
-
         let text = "";
         if (response.candidates && response.candidates[0] && response.candidates[0].content && response.candidates[0].content.parts) {
             for (const part of response.candidates[0].content.parts) {
@@ -70,44 +54,31 @@ export async function POST(req: Request) {
             }
         }
 
-        console.log('📄 [generate-story] Extracted text length:', text.length);
-
         if (!text) {
-            console.error('❌ [generate-story] No text generated in response:', JSON.stringify(response, null, 2));
+            console.error('❌ [generate-story] No text generated in response');
             return NextResponse.json({ error: 'No text generated' }, { status: 500 });
         }
 
         // Clean up text if it contains markdown code blocks
         const cleanText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-        console.log('🧹 [generate-story] Cleaned text length:', cleanText.length);
 
         // Parse JSON response
         let storyResult: StoryResult;
         try {
             storyResult = JSON.parse(cleanText);
-            console.log('✅ [generate-story] JSON parsed successfully, panels:', storyResult.panels?.length);
         } catch (parseError) {
             console.error('❌ [generate-story] JSON Parse Error:', parseError);
-            console.error('❌ [generate-story] Raw Text:', text);
             return NextResponse.json({ error: 'Failed to parse AI response as JSON' }, { status: 500 });
         }
 
         // Validate and limit panel count
         if (storyResult.panels.length > maxPanels) {
-            console.log(`⚠️ [generate-story] Limiting panels from ${storyResult.panels.length} to ${maxPanels}`);
             storyResult.panels = storyResult.panels.slice(0, maxPanels);
         }
 
-        console.log('🎉 [generate-story] Story generation successful');
         return NextResponse.json(storyResult);
     } catch (error: any) {
-        console.error('❌ [generate-story] Error:', error);
-        console.error('❌ [generate-story] Error stack:', error.stack);
-        console.error('❌ [generate-story] Error details:', {
-            name: error.name,
-            message: error.message,
-            cause: error.cause
-        });
+        console.error('❌ [generate-story] Error:', error.message);
 
         // 识别不同类型的错误
         let errorType = 'general';

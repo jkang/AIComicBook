@@ -37,6 +37,7 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose, onSave }) =>
     setIsSaving(true);
     try {
       saveApiKey(apiKey);
+
       setTimeout(() => {
         setIsSaving(false);
         onSave();
