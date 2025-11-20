@@ -29,6 +29,7 @@ const ComicPanel: React.FC<ComicPanelProps> = ({ panel, panelNumber, imageUrl, o
 
   // API Key Modal State
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
+  const [shouldShowRegenInputAfterApiKey, setShouldShowRegenInputAfterApiKey] = useState(false);
 
   // Error Modal State
   const [showErrorModal, setShowErrorModal] = useState(false);
@@ -82,9 +83,28 @@ const ComicPanel: React.FC<ComicPanelProps> = ({ panel, panelNumber, imageUrl, o
     }
   };
 
+  const handleRegenerateClick = () => {
+    // 点击 regenerate 时，先检查 API key
+    if (!hasApiKey()) {
+      // 没有 API key，先显示 API key 弹框
+      setShouldShowRegenInputAfterApiKey(true);
+      setShowApiKeyModal(true);
+      return;
+    }
+
+    // 有 API key，直接显示修改提示框
+    setShowRegenInput(!showRegenInput);
+  };
+
   const handleApiKeySaved = () => {
     // API key 保存后，关闭弹框
     setShowApiKeyModal(false);
+
+    // 如果是从 regenerate 触发的，显示修改提示框
+    if (shouldShowRegenInputAfterApiKey) {
+      setShowRegenInput(true);
+      setShouldShowRegenInputAfterApiKey(false);
+    }
   };
 
   const handleSave = () => {
@@ -221,7 +241,7 @@ const ComicPanel: React.FC<ComicPanelProps> = ({ panel, panelNumber, imageUrl, o
             </>
           ) : (
             <button
-              onClick={() => activeImage ? setShowRegenInput(!showRegenInput) : handleGenerate()}
+              onClick={() => activeImage ? handleRegenerateClick() : handleGenerate()}
               disabled={isGenerating}
               className={`w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2 px-4 rounded transition-colors flex items-center justify-center gap-2 ${isGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
