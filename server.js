@@ -20,24 +20,31 @@ app.post('/api/generate-image', async (req, res) => {
     try {
         const { prompt } = req.body;
 
+        console.log('📸 Image generation request received');
+        console.log('Prompt length:', prompt?.length);
+
         if (!prompt) {
             return res.status(400).json({ error: 'Prompt is required' });
         }
 
         if (!apiKey) {
+            console.error('❌ API key not configured');
             return res.status(500).json({ error: 'API key not configured' });
         }
 
         // Enhance prompt for consistency (as a professional comic designer)
         const enhancedPrompt = enhanceComicPrompt(prompt);
+        console.log('Enhanced prompt:', enhancedPrompt.substring(0, 200) + '...');
 
         const genAI = new GoogleGenerativeAI(apiKey);
 
-        // Use Gemini 2.5 Flash Image - best image generation model
+        // Testing Gemini 3 Pro Image Preview - experimental image generation model
+        console.log('Using model: gemini-3-pro-image-preview');
         const model = genAI.getGenerativeModel({
-            model: 'gemini-2.5-flash-image'
+            model: 'gemini-3-pro-image-preview'
         });
 
+        console.log('Calling generateContent...');
         const result = await model.generateContent({
             contents: [{
                 role: 'user',
@@ -51,21 +58,32 @@ app.post('/api/generate-image', async (req, res) => {
             }
         });
 
+        console.log('Response received');
         const response = result.response;
         const imageData = response.candidates?.[0]?.content?.parts?.[0]?.inlineData;
 
         if (!imageData || !imageData.data) {
+            console.error('❌ No image data in response');
+            console.error('Response structure:', JSON.stringify(response, null, 2));
             return res.status(500).json({ error: 'No image data received from API' });
         }
 
+        console.log('✅ Image generated successfully');
         res.json({
             image: `data:${imageData.mimeType};base64,${imageData.data}`
         });
     } catch (error) {
-        console.error('Error generating image:', error);
+        console.error('❌ Error generating image:');
+        console.error('Error name:', error.name);
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+        if (error.response) {
+            console.error('API Response:', error.response);
+        }
         res.status(500).json({
             error: 'Failed to generate image',
-            details: error.message
+            details: error.message,
+            errorType: error.name
         });
     }
 });

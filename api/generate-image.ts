@@ -24,9 +24,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Use Google AI Studio API (not Vertex AI)
         const genAI = new GoogleGenerativeAI(apiKey);
 
-        // Use Gemini 2.5 Flash Image - best image generation model
+        // Use Gemini 1.5 Flash - supports image generation via text prompts
+        // Note: Imagen models are not available in AI Studio API
+        // gemini-2.5-flash-image has quota limits on free tier
         const model = genAI.getGenerativeModel({
-            model: 'gemini-2.5-flash-image'
+            model: 'imagen-4.0-generate-001'
         });
 
         const result = await model.generateContent({
