@@ -17,6 +17,7 @@ const AddStory: React.FC<AddStoryProps> = ({ onSave, onCancel }) => {
     const [isGenerating, setIsGenerating] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [generatedResult, setGeneratedResult] = useState<{
+        visualStyle: string;
         characters: string[];
         panels: ComicPanelData[];
         optimizedStory: string;
