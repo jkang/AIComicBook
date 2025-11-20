@@ -70,3 +70,30 @@ export const clearAllTextsFromDB = async (): Promise<void> => {
     await del(key);
   }
 };
+
+const STORY_PREFIX = 'custom_story_';
+
+export const saveStoryToDB = async (story: any): Promise<void> => {
+  await set(`${STORY_PREFIX}${story.id}`, story);
+};
+
+export const getAllStoriesFromDB = async (): Promise<any[]> => {
+  const allKeys = await keys();
+  const storyKeys = allKeys.filter(k => typeof k === 'string' && k.startsWith(STORY_PREFIX));
+
+  const stories: any[] = [];
+
+  for (const key of storyKeys) {
+    const story = await get<any>(key);
+    if (story) {
+      stories.push(story);
+    }
+  }
+
+  // Sort by creation date, newest first
+  return stories.sort((a, b) => b.createdAt - a.createdAt);
+};
+
+export const deleteStoryFromDB = async (storyId: string): Promise<void> => {
+  await del(`${STORY_PREFIX}${storyId}`);
+};

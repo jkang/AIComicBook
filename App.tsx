@@ -2,50 +2,54 @@
 import React, { useState, useEffect } from 'react';
 import { COMIC_PANELS } from './constants';
 import ComicPanel from './components/ComicPanel';
-import { getAllImagesFromDB, saveImageToDB, clearAllImagesFromDB, getAllTextsFromDB, saveTextToDB, clearAllTextsFromDB } from './services/storageService';
+import AddStory from './components/AddStory';
+import { getAllImagesFromDB, saveImageToDB, clearAllImagesFromDB, getAllTextsFromDB, saveTextToDB, clearAllTextsFromDB, getAllStoriesFromDB, saveStoryToDB, deleteStoryFromDB } from './services/storageService';
 import { panelImages } from './assets/images';
+import { Story } from './types';
+import { exportStoryAsHTML } from './services/exportService';
+
+type ViewMode = 'default' | 'add-story' | 'custom-story';
 
 const App: React.FC = () => {
-  // State to manage images. 
-  // initialized as empty, will hydrate from IndexedDB
+  // State to manage images and texts
   const [images, setImages] = useState<Record<number, string>>({});
   const [panelTexts, setPanelTexts] = useState<Record<number, string>>({});
   const [isLoaded, setIsLoaded] = useState(false);
-  const [apiKey, setApiKey] = useState<string>(() => {
-    // Load API key from localStorage on mount
-    return localStorage.getItem('gemini_api_key') || '';
-  });
 
-  // Load images from IndexedDB on mount
+  // View and story management
+  const [viewMode, setViewMode] = useState<ViewMode>('default');
+  const [customStories, setCustomStories] = useState<Story[]>([]);
+  const [selectedStoryId, setSelectedStoryId] = useState<string | null>(null);
+
+  // Load data from IndexedDB on mount
   useEffect(() => {
-    const loadImages = async () => {
+    const loadData = async () => {
       try {
         const storedImages = await getAllImagesFromDB();
-        // Merge default images with stored images, stored images take priority
         const mergedImages = { ...panelImages, ...storedImages };
         setImages(mergedImages);
 
         const storedTexts = await getAllTextsFromDB();
         setPanelTexts(storedTexts);
+
+        const stories = await getAllStoriesFromDB();
+        setCustomStories(stories);
       } catch (error) {
         console.error("Failed to load data from DB", error);
-        // If DB fails, at least use default images
         setImages(panelImages);
       } finally {
         setIsLoaded(true);
       }
     };
-    loadImages();
+    loadData();
   }, []);
 
   const handleSaveImage = async (panelId: number, imageUrl: string) => {
-    // Update state immediately for UI feedback
     setImages((prev) => ({
       ...prev,
       [panelId]: imageUrl,
     }));
 
-    // Persist to IndexedDB
     try {
       await saveImageToDB(panelId, imageUrl);
     } catch (error) {
@@ -68,7 +72,7 @@ const App: React.FC = () => {
   };
 
   const handleClearStorage = async () => {
-    if (window.confirm("Are you sure you want to delete all generated images and edits?")) {
+    if (window.confirm("确定要删除所有生成的图片和编辑吗？")) {
       await clearAllImagesFromDB();
       await clearAllTextsFromDB();
       setImages({});
@@ -76,27 +80,137 @@ const App: React.FC = () => {
     }
   };
 
-  const handleSaveApiKey = (key: string) => {
-    setApiKey(key);
-    localStorage.setItem('gemini_api_key', key);
+  const handleSaveStory = async (story: Story) => {
+    try {
+      await saveStoryToDB(story);
+      setCustomStories((prev) => [story, ...prev]);
+      setSelectedStoryId(story.id);
+      setViewMode('custom-story');
+    } catch (error) {
+      console.error("Failed to save story", error);
+      alert("保存故事失败");
+    }
   };
+
+  const handleDeleteStory = async (storyId: string) => {
+    if (window.confirm("确定要删除这个故事吗？")) {
+      try {
+        await deleteStoryFromDB(storyId);
+        setCustomStories((prev) => prev.filter(s => s.id !== storyId));
+        if (selectedStoryId === storyId) {
+          setSelectedStoryId(null);
+          setViewMode('default');
+        }
+      } catch (error) {
+        console.error("Failed to delete story", error);
+      }
+    }
+  };
+
+  const handleExportStory = () => {
+    const story = customStories.find(s => s.id === selectedStoryId);
+    if (story) {
+      exportStoryAsHTML(story, images);
+    }
+  };
+
+  // Get current panels based on view mode
+  const getCurrentPanels = () => {
+    if (viewMode === 'custom-story' && selectedStoryId) {
+      const story = customStories.find(s => s.id === selectedStoryId);
+      return story ? story.panels : [];
+    }
+    return COMIC_PANELS;
+  };
+
+  const getCurrentTitle = () => {
+    if (viewMode === 'custom-story' && selectedStoryId) {
+      const story = customStories.find(s => s.id === selectedStoryId);
+      return story ? story.title : 'AI 宕掉的 72 小时';
+    }
+    return 'AI 宕掉的 72 小时';
+  };
+
+  if (viewMode === 'add-story') {
+    return (
+      <AddStory
+        onSave={handleSaveStory}
+        onCancel={() => setViewMode('default')}
+      />
+    );
+  }
+
+  const currentPanels = getCurrentPanels();
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-200 font-sans">
       <header className="bg-gray-800/80 backdrop-blur-sm sticky top-0 z-20 shadow-lg">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-indigo-400 tracking-wider">
-              AI 宕掉的 72 小时
-            </h1>
-            <p className="text-gray-400 mt-1 text-sm">A Web Comic Generator</p>
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex justify-between items-center mb-3">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-indigo-400 tracking-wider">
+                {getCurrentTitle()}
+              </h1>
+              <p className="text-gray-400 mt-1 text-sm">AI Comic Book Generator</p>
+            </div>
+            <div className="flex gap-2">
+              {viewMode === 'custom-story' && (
+                <>
+                  <button
+                    onClick={handleExportStory}
+                    className="text-xs text-green-400 hover:text-green-300 border border-green-900 hover:bg-green-900/30 px-3 py-1 rounded transition-colors"
+                  >
+                    导出 HTML
+                  </button>
+                  <button
+                    onClick={() => selectedStoryId && handleDeleteStory(selectedStoryId)}
+                    className="text-xs text-red-400 hover:text-red-300 border border-red-900 hover:bg-red-900/30 px-3 py-1 rounded transition-colors"
+                  >
+                    删除故事
+                  </button>
+                </>
+              )}
+              <button
+                onClick={() => setViewMode('add-story')}
+                className="text-xs text-indigo-400 hover:text-indigo-300 border border-indigo-900 hover:bg-indigo-900/30 px-3 py-1 rounded transition-colors"
+              >
+                + 添加故事
+              </button>
+            </div>
           </div>
-          <button
-            onClick={handleClearStorage}
-            className="text-xs text-red-400 hover:text-red-300 border border-red-900 hover:bg-red-900/30 px-3 py-1 rounded transition-colors"
-          >
-            Reset Images
-          </button>
+
+          {/* Story Selector */}
+          {customStories.length > 0 && (
+            <div className="flex gap-2 overflow-x-auto pb-2">
+              <button
+                onClick={() => {
+                  setViewMode('default');
+                  setSelectedStoryId(null);
+                }}
+                className={`px-3 py-1 rounded text-xs whitespace-nowrap transition-colors ${viewMode === 'default'
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  }`}
+              >
+                默认故事
+              </button>
+              {customStories.map((story) => (
+                <button
+                  key={story.id}
+                  onClick={() => {
+                    setSelectedStoryId(story.id);
+                    setViewMode('custom-story');
+                  }}
+                  className={`px-3 py-1 rounded text-xs whitespace-nowrap transition-colors ${selectedStoryId === story.id
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                >
+                  {story.title}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </header>
 
@@ -105,7 +219,7 @@ const App: React.FC = () => {
           <div className="text-center py-20">Loading comic data...</div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {COMIC_PANELS.map((panel, index) => (
+            {currentPanels.map((panel, index) => (
               <ComicPanel
                 key={panel.id}
                 panel={{
@@ -116,8 +230,6 @@ const App: React.FC = () => {
                 imageUrl={images[panel.id]}
                 onSaveImage={handleSaveImage}
                 onSaveText={handleSaveText}
-                apiKey={apiKey}
-                onSaveApiKey={handleSaveApiKey}
               />
             ))}
           </div>
@@ -125,7 +237,7 @@ const App: React.FC = () => {
       </main>
 
       <footer className="text-center p-8 mt-8 text-gray-500 text-sm border-t border-gray-800">
-        <p>Story based on "72 Hours of AI Downtime". Images generated via Google Imagen.</p>
+        <p>AI Comic Book Generator. Images generated via Google Imagen.</p>
       </footer>
     </div>
   );

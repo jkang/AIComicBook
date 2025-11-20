@@ -9,16 +9,12 @@ interface ComicPanelProps {
   imageUrl?: string;
   onSaveImage: (id: number, url: string) => void;
   onSaveText: (id: number, text: string) => void;
-  apiKey: string;
-  onSaveApiKey: (key: string) => void;
 }
 
-const ComicPanel: React.FC<ComicPanelProps> = ({ panel, panelNumber, imageUrl, onSaveImage, onSaveText, apiKey, onSaveApiKey }) => {
+const ComicPanel: React.FC<ComicPanelProps> = ({ panel, panelNumber, imageUrl, onSaveImage, onSaveText }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedPreview, setGeneratedPreview] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [showApiKeyDialog, setShowApiKeyDialog] = useState(false);
-  const [apiKeyInput, setApiKeyInput] = useState('');
 
   // Text Editing State
   const [isEditingText, setIsEditingText] = useState(false);
@@ -29,12 +25,6 @@ const ComicPanel: React.FC<ComicPanelProps> = ({ panel, panelNumber, imageUrl, o
   const [regenPrompt, setRegenPrompt] = useState('');
 
   const handleGenerate = async (customPrompt?: string) => {
-    // Check if API key is set
-    if (!apiKey) {
-      setShowApiKeyDialog(true);
-      return;
-    }
-
     setIsGenerating(true);
     setError(null);
     setShowRegenInput(false); // Close input if open
@@ -46,34 +36,10 @@ const ComicPanel: React.FC<ComicPanelProps> = ({ panel, panelNumber, imageUrl, o
         finalPrompt += ` Modification request: ${customPrompt}`;
       }
 
-      const base64Image = await generateComicPanelImage(finalPrompt, apiKey);
+      const base64Image = await generateComicPanelImage(finalPrompt);
       setGeneratedPreview(base64Image);
     } catch (err) {
-      setError("生成失败，请检查你的 API key 是否正确。");
-      console.error(err);
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  const handleApiKeySubmit = async () => {
-    const trimmedKey = apiKeyInput.trim();
-    if (!trimmedKey) {
-      return;
-    }
-
-    onSaveApiKey(trimmedKey);
-    setShowApiKeyDialog(false);
-    setApiKeyInput('');
-
-    // Now generate with the new key
-    setIsGenerating(true);
-    setError(null);
-    try {
-      const base64Image = await generateComicPanelImage(panel.imagePrompt, trimmedKey);
-      setGeneratedPreview(base64Image);
-    } catch (err) {
-      setError("生成失败，请检查你的 API key 是否正确。");
+      setError("生成失败，请稍后重试。");
       console.error(err);
     } finally {
       setIsGenerating(false);
@@ -256,56 +222,6 @@ const ComicPanel: React.FC<ComicPanelProps> = ({ panel, panelNumber, imageUrl, o
           </>
         )}
       </div>
-
-      {/* API Key Dialog */}
-      {showApiKeyDialog && (
-        <div className="absolute inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-800 border-2 border-indigo-500 rounded-lg p-6 max-w-md w-full shadow-2xl">
-            <h3 className="text-xl font-bold text-indigo-400 mb-4">需要 API Key</h3>
-            <p className="text-gray-300 mb-4 text-sm leading-relaxed">
-              要生成图片，你需要一个 Google AI Studio 的 Gemini API Key。
-            </p>
-            <div className="bg-gray-900 border border-gray-700 rounded p-3 mb-4">
-              <p className="text-xs text-gray-400 mb-2">获取免费 API Key：</p>
-              <a
-                href="https://aistudio.google.com/apikey"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-indigo-400 hover:text-indigo-300 text-sm underline break-all"
-              >
-                https://aistudio.google.com/apikey
-              </a>
-            </div>
-            <input
-              type="text"
-              value={apiKeyInput}
-              onChange={(e) => setApiKeyInput(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleApiKeySubmit()}
-              placeholder="粘贴你的 API Key"
-              className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-gray-200 text-sm mb-4 focus:outline-none focus:border-indigo-500"
-              autoFocus
-            />
-            <div className="flex gap-2">
-              <button
-                onClick={handleApiKeySubmit}
-                disabled={!apiKeyInput.trim()}
-                className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded transition-colors"
-              >
-                确认并生成
-              </button>
-              <button
-                onClick={() => {
-                  setShowApiKeyDialog(false);
-                  setApiKeyInput('');
-                }}
-                className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded transition-colors"
-              >
-                取消
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

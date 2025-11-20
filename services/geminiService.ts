@@ -1,39 +1,57 @@
 
-import { GoogleGenAI } from "@google/genai";
+import { ComicPanelData } from '../types';
 
-export const generateComicPanelImage = async (prompt: string, userApiKey?: string): Promise<string> => {
+export const generateComicPanelImage = async (prompt: string): Promise<string> => {
   try {
-    // Use user-provided API key if available, otherwise fall back to environment variable
-    const apiKey = userApiKey || import.meta.env.VITE_GEMINI_API_KEY;
-
-    if (!apiKey) {
-      throw new Error("API key is required. Please provide your Gemini API key.");
-    }
-
-    const ai = new GoogleGenAI({ apiKey });
-
-    // The prompt is now passed directly from the component, which pulls it from constants.ts
-    // The constants.ts file already contains the style guide and character descriptions in the prompt.
-
-    const response = await ai.models.generateImages({
-      model: 'imagen-4.0-generate-001',
-      prompt: prompt,
-      config: {
-        numberOfImages: 1,
-        aspectRatio: '4:3',
-        outputMimeType: 'image/jpeg',
+    const response = await fetch('/api/generate-image', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
       },
+      body: JSON.stringify({ prompt }),
     });
 
-    const base64Image = response.generatedImages?.[0]?.image?.imageBytes;
-
-    if (!base64Image) {
-      throw new Error("No image data received from API");
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to generate image');
     }
 
-    return `data:image/jpeg;base64,${base64Image}`;
+    const data = await response.json();
+    return data.image;
   } catch (error) {
-    console.error("Error generating image:", error);
+    console.error('Error generating image:', error);
+    throw error;
+  }
+};
+
+export interface StoryGenerationResult {
+  characters: string[];
+  panels: ComicPanelData[];
+  optimizedStory: string;
+}
+
+export const generateStoryPanels = async (
+  storyText: string,
+  keywords: string[] = []
+): Promise<StoryGenerationResult> => {
+  try {
+    const response = await fetch('/api/generate-story', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ storyText, keywords }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to generate story');
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error generating story:', error);
     throw error;
   }
 };
