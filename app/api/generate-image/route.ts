@@ -1,6 +1,65 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenAI } from "@google/genai";
-import { generateFinalImagePrompt, enhanceComicPromptSimple } from '../../../shared/gemini-helper';
+import { createImagePromptGenerationPrompt, enhanceComicPromptSimple } from '../../../shared/gemini-helper';
+
+/**
+ * Generate final image prompt using AI
+ * @param ai - GoogleGenAI instance
+ * @param visualStyle - Visual style description (can be in any language)
+ * @param characters - Array of character descriptions (can be in any language)
+ * @param panelText - The narrative text for this panel (can be in any language)
+ * @param prompt - The scene description from panel.imagePrompt
+ * @returns Professional English image generation prompt
+ */
+async function generateFinalImagePrompt(
+    ai: GoogleGenAI,
+    visualStyle: string,
+    characters: string[],
+    panelText: string,
+    prompt: string
+): Promise<string> {
+    try {
+        // Step 1: Use Gemini 2.0 Flash to generate professional English image prompt
+        const promptGenerationPrompt = createImagePromptGenerationPrompt(
+            visualStyle || '',
+            characters || [],
+            panelText || '',
+            prompt
+        );
+
+        const promptResponse = await ai.models.generateContent({
+            model: "gemini-2.0-flash",
+            contents: promptGenerationPrompt,
+            config: {
+                temperature: 0.7,
+                topP: 0.9,
+                topK: 40,
+                maxOutputTokens: 500,
+            }
+        });
+
+        let generatedPrompt = "";
+        if (promptResponse.candidates && promptResponse.candidates[0] &&
+            promptResponse.candidates[0].content && promptResponse.candidates[0].content.parts) {
+            for (const part of promptResponse.candidates[0].content.parts) {
+                if (part.text) {
+                    generatedPrompt += part.text;
+                }
+            }
+        }
+
+        // Clean up the response (remove quotes if present)
+        const enhancedPrompt = generatedPrompt.trim().replace(/^["']|["']$/g, '');
+        console.log('✨ [generate-image] AI-generated prompt:', enhancedPrompt);
+        return enhancedPrompt;
+    } catch (aiError) {
+        // Fallback to simple enhancement if AI call fails
+        console.warn('⚠️ [generate-image] AI prompt generation failed, using fallback:', aiError);
+        const fallbackPrompt = enhanceComicPromptSimple(prompt, visualStyle || '', characters || []);
+        console.log('📋 [generate-image] Fallback prompt:', fallbackPrompt);
+        return fallbackPrompt;
+    }
+}
 
 export async function POST(req: Request) {
     try {
@@ -17,28 +76,19 @@ export async function POST(req: Request) {
             }, { status: 401 });
         }
 
-        // Generate final image prompt using AI
+        const ai = new GoogleGenAI({ apiKey });
+
+        // Generate final image prompt using AI (server-side)
         // This will translate and naturally integrate visualStyle, characters, and scene description
-        let enhancedPrompt: string;
-        try {
-            enhancedPrompt = await generateFinalImagePrompt(
-                visualStyle || '',
-                characters || [],
-                panelText || '',
-                prompt,
-                apiKey
-            );
-            console.log('✨ [generate-image] AI-generated prompt:', enhancedPrompt);
-        } catch (aiError) {
-            // Fallback to simple enhancement if AI call fails
-            console.warn('⚠️ [generate-image] AI prompt generation failed, using fallback:', aiError);
-            enhancedPrompt = enhanceComicPromptSimple(prompt, visualStyle || '', characters || []);
-            console.log('📋 [generate-image] Fallback prompt:', enhancedPrompt);
-        }
+        const enhancedPrompt = await generateFinalImagePrompt(
+            ai,
+            visualStyle || '',
+            characters || [],
+            panelText || '',
+            prompt
+        );
 
-        // Use the new SDK for Gemini 2.5 Flash Image
-        const ai = new GoogleGenAI({ apiKey: apiKey });
-
+        // Step 2: Use Gemini 2.5 Flash Image to generate the actual image
         const response = await ai.models.generateContent({
             model: "gemini-2.5-flash-image",
             contents: enhancedPrompt,
