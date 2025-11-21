@@ -105,7 +105,7 @@ export default function Home() {
 
             // 为新故事的第一帧添加示例图片
             try {
-                const response = await fetch('/image-1.png');
+                const response = await fetch('/image-1.jpg');
                 const blob = await response.blob();
                 const reader = new FileReader();
                 reader.onloadend = async () => {
